@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
-//Generally all interactions should propagate downstream
-
 pragma solidity ^0.8.16;
 
+import "./IMEP1002.sol";
 import "./IERC6059.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "./MEP1002NamingToken.sol";
+import  "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
@@ -17,6 +17,9 @@ import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
+import "../libs/H3Library.sol";
 
     error ChildAlreadyExists();
     error ChildIndexOutOfRange();
@@ -45,17 +48,31 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
     error UnexpectedChildId();
     error UnexpectedNumberOfChildren();
 
+    error InvalidGeolocation();
+    error NoNamingPermission();
+
 /**
  * @title NestableToken
- * @author RMRK team
+ * @author MXCZKEvmTeam
  * @notice Smart contract of the Nestable module.
  * @dev This contract is hierarchy agnostic and can support an arbitrary number of nested levels up and down, as long as
  *  gas limits allow it.
  */
-contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable, IERC721Upgradeable, IERC721MetadataUpgradeable, IERC6059  {
+
+contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable, IERC721Upgradeable, IERC721MetadataUpgradeable, IMEP1002, IERC6059  {
+    using Counters for Counters.Counter;
     using AddressUpgradeable for address;
     using StringsUpgradeable for uint256;
+    using H3Library for uint256;
 
+    event MEP1002TokenUpdateAttr(uint256 indexed tokenId, MEP1002Attributes indexed attr);
+
+    struct MEP1002Attributes {
+        uint256 parentTokenId;
+        uint256 geolocation;
+        uint256 namingRightTokenId;
+        string name;
+    }
 
     uint256 private constant _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP = 100;
 
@@ -86,6 +103,8 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable, I
     //  we can strip it for size/gas savings.
     mapping(address => mapping(uint256 => uint256)) internal _childIsInActive;
 
+    // MEP1002 Token attributes;
+    mapping (uint256 => MEP1002Attributes) private _tokenAttributes;
 
     // Token name
     string private _name;
@@ -93,25 +112,59 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable, I
     // Token symbol
     string private _symbol;
 
-    // Token Last TokenId
-    uint256 private _lastTokenId;
+    // TokenId counter
+    Counters.Counter private _tokenIds;
 
+    address private _namingToken;
 
-    function mint() external {
-        _lastTokenId++;
-        _mint(_msgSender(), _lastTokenId);
+    function init(string memory name_, string memory symbol_, address namingTokenAddr) public initializer {
+        IMEP1002NamingToken(namingTokenAddr).init("MEP1002 Naming Token", "MEP1002NT");
+        __MEP1002_init(name_, symbol_, namingTokenAddr);
+    }
+
+    function mint(uint256 geolocation_) external {
+        if(!geolocation_.isValidCell()) revert InvalidGeolocation();
+        bool hasParent = false;
+        for (uint256 i = 0; i < geolocation_.getResolution() - H3Library.getMinResolution(); i++) {
+            this.mint(geolocation_.cellToParent());
+            hasParent = true;
+        }
+        _tokenIds.increment();
+        uint256 tokenId = _tokenIds.current();
+        if(hasParent) {
+            _nestMint(address(this), tokenId-1, tokenId, "");
+        }else {
+            _safeMint(address(this), tokenId);
+        }
+        IMEP1002NamingToken(_namingToken).mint(_msgSender(), tokenId);
+        _tokenAttributes[tokenId] = MEP1002Attributes({parentTokenId: tokenId-1, geolocation: geolocation_, namingRightTokenId: tokenId, name: ""});
+        emit MEP1002TokenUpdateAttr(tokenId, _tokenAttributes[tokenId]);
+    }
+
+    function setName(uint256 tokenId, string memory name_) public {
+        _requireMinted(tokenId);
+        if (IERC721(_namingToken).ownerOf(_tokenAttributes[tokenId].parentTokenId) != _msgSender()) revert NoNamingPermission();
+
+        _tokenAttributes[tokenId].name = name_;
+        emit MEP1002TokenUpdateAttr(tokenId, _tokenAttributes[tokenId]);
+    }
+
+    function geolocation(uint256 tokenId) external view returns (uint256) {
+        _requireMinted(tokenId);
+        return _tokenAttributes[tokenId].geolocation;
     }
 
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
      */
-    function __ERC721_init(string memory name_, string memory symbol_) internal onlyInitializing {
-        __ERC721_init_unchained(name_, symbol_);
+    function __MEP1002_init(string memory name_, string memory symbol_, address namingToken_) internal onlyInitializing {
+        __MEP1002_init_unchained(name_, symbol_, namingToken_);
     }
 
-    function __ERC721_init_unchained(string memory name_, string memory symbol_) internal onlyInitializing {
+    function __MEP1002_init_unchained(string memory name_, string memory symbol_,address namingToken_) internal onlyInitializing {
         _name = name_;
         _symbol = symbol_;
+        _namingToken = namingToken_;
     }
 
     /**
@@ -146,7 +199,23 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable, I
         _requireMinted(tokenId);
 
         string memory baseURI = _baseURI();
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
+
+        MEP1002Attributes memory attrs = _tokenAttributes[tokenId];
+        string memory metadataURI = string(abi.encodePacked(baseURI, tokenId));
+        string memory result = string(
+            abi.encodePacked(
+                metadataURI,
+                "&parentTokenId=",
+                attrs.parentTokenId.toString(),
+                "&geolocation=",
+                attrs.geolocation.toString(),
+                "&namingRightTokenId=",
+                attrs.namingRightTokenId.toString(),
+                "&name",
+                attrs.name
+            )
+        );
+        return result;
     }
 
     /**

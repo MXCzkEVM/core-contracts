@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 interface IMEP1002 /* is ERC6059 */ {

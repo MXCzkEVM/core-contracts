@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.16;
 
-import "../MEP1002Token.sol";
+import "../MEP1002NamingToken.sol";
 
 //Minimal public implementation of IRMRKNestable for testing.
-contract MEP1002TokenMock is MEP1002Token {
+contract MEP1002NamingTokenMock is MEP1002NamingToken {
 }

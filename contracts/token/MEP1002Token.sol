@@ -5,7 +5,8 @@ pragma solidity ^0.8.16;
 import "./IMEP1002.sol";
 import "./IERC6059.sol";
 import "./MEP1002NamingToken.sol";
-import  "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
@@ -59,7 +60,7 @@ import "../libs/H3Library.sol";
  *  gas limits allow it.
  */
 
-contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable, IERC721Upgradeable, IERC721MetadataUpgradeable, IMEP1002, IERC6059  {
+contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ERC721Holder,IERC721Upgradeable, IERC721MetadataUpgradeable, IMEP1002, IERC6059 {
     using Counters for Counters.Counter;
     using AddressUpgradeable for address;
     using StringsUpgradeable for uint256;
@@ -106,6 +107,9 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable, I
     // MEP1002 Token attributes;
     mapping (uint256 => MEP1002Attributes) private _tokenAttributes;
 
+    // geolocation -> tokenId
+    mapping (uint256 => uint256) private _geolocationToTokenId;
+
     // Token name
     string private _name;
 
@@ -124,6 +128,7 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable, I
 
     function mint(uint256 geolocation_) external {
         if(!geolocation_.isValidCell()) revert InvalidGeolocation();
+        if(_geolocationToTokenId[geolocation_] != 0) revert ERC721TokenAlreadyMinted();
         bool hasParent = false;
         for (uint256 i = 0; i < geolocation_.getResolution() - H3Library.getMinResolution(); i++) {
             this.mint(geolocation_.cellToParent());
@@ -138,6 +143,7 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable, I
         }
         IMEP1002NamingToken(_namingToken).mint(_msgSender(), tokenId);
         _tokenAttributes[tokenId] = MEP1002Attributes({parentTokenId: tokenId-1, geolocation: geolocation_, namingRightTokenId: tokenId, name: ""});
+        _geolocationToTokenId[geolocation_] = tokenId;
         emit MEP1002TokenUpdateAttr(tokenId, _tokenAttributes[tokenId]);
     }
 

@@ -1,56 +1,81 @@
 // SPDX-License-Identifier: CC0-1.0
 
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.18;
 
-import "./IMEP1002.sol";
-import "./IERC6059.sol";
-import "./MEP1002NamingToken.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
+import {IMEP1002} from "./IMEP1002.sol";
+import {IERC6059} from "./IERC6059.sol";
+import {IMEP1002NamingToken} from "./IMEP1002NamingToken.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {
+    ERC721Holder
+} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import {
+    IERC721Receiver
+} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {
+    IERC165Upgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
+import {
+    IERC721Metadata
+} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import {
+    IERC721MetadataUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
+import {
+    IERC721Upgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import {
+    IERC721ReceiverUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
+import {
+    AddressUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import {
+    ContextUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import {
+    StringsUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import {
+    ERC165Upgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import {
+    Initializable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 
-import "../libs/H3Library.sol";
+import {H3Library} from "../libs/H3Library.sol";
 
-    error ChildAlreadyExists();
-    error ChildIndexOutOfRange();
-    error ERC721AddressZeroIsNotaValidOwner();
-    error ERC721ApprovalToCurrentOwner();
-    error ERC721ApproveCallerIsNotOwnerNorApprovedForAll();
-    error ERC721ApproveToCaller();
-    error ERC721InvalidTokenId();
-    error ERC721MintToTheZeroAddress();
-    error ERC721NotApprovedOrOwner();
-    error ERC721TokenAlreadyMinted();
-    error ERC721TransferFromIncorrectOwner();
-    error ERC721TransferToNonReceiverImplementer();
-    error ERC721TransferToTheZeroAddress();
-    error IdZeroForbidden();
-    error IsNotContract();
-    error MaxPendingChildrenReached();
-    error MaxRecursiveBurnsReached(address childContract, uint256 childId);
-    error MintToNonNestableImplementer();
-    error NestableTooDeep();
-    error NestableTransferToDescendant();
-    error NestableTransferToNonNestableImplementer();
-    error NestableTransferToSelf();
-    error NotApprovedOrDirectOwner();
-    error PendingChildIndexOutOfRange();
-    error UnexpectedChildId();
-    error UnexpectedNumberOfChildren();
+error ChildAlreadyExists();
+error ChildIndexOutOfRange();
+error ERC721AddressZeroIsNotaValidOwner();
+error ERC721ApprovalToCurrentOwner();
+error ERC721ApproveCallerIsNotOwnerNorApprovedForAll();
+error ERC721ApproveToCaller();
+error ERC721InvalidTokenId();
+error ERC721MintToTheZeroAddress();
+error ERC721NotApprovedOrOwner();
+error ERC721TokenAlreadyMinted();
+error ERC721TransferFromIncorrectOwner();
+error ERC721TransferToNonReceiverImplementer();
+error ERC721TransferToTheZeroAddress();
+error IdZeroForbidden();
+error IsNotContract();
+error MaxPendingChildrenReached();
+error MaxRecursiveBurnsReached(address childContract, uint256 childId);
+error MintToNonNestableImplementer();
+error NestableTooDeep();
+error NestableTransferToDescendant();
+error NestableTransferToNonNestableImplementer();
+error NestableTransferToSelf();
+error NotApprovedOrDirectOwner();
+error PendingChildIndexOutOfRange();
+error UnexpectedChildId();
+error UnexpectedNumberOfChildren();
 
-    error InvalidGeolocation();
-    error NoNamingPermission();
+error InvalidGeolocation();
+error NoNamingPermission();
 
 /**
  * @title NestableToken
@@ -60,13 +85,20 @@ import "../libs/H3Library.sol";
  *  gas limits allow it.
  */
 
-contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ERC721Holder,IERC721Upgradeable, IERC721MetadataUpgradeable, IMEP1002, IERC6059 {
+contract MEP1002Token is
+    Initializable,
+    ContextUpgradeable,
+    ERC165Upgradeable,
+    ERC721Holder,
+    IERC721Upgradeable,
+    IERC721MetadataUpgradeable,
+    IMEP1002,
+    IERC6059
+{
     using Counters for Counters.Counter;
     using AddressUpgradeable for address;
     using StringsUpgradeable for uint256;
     using H3Library for uint256;
-
-    event MEP1002TokenUpdateAttr(uint256 indexed tokenId, uint256 indexed geolocation, uint256 indexed namingRightTokenId, string name);
 
     struct MEP1002Attributes {
         uint256 parentTokenId;
@@ -105,10 +137,10 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
     mapping(address => mapping(uint256 => uint256)) internal _childIsInActive;
 
     // MEP1002 Token attributes;
-    mapping (uint256 => MEP1002Attributes) private _tokenAttributes;
+    mapping(uint256 => MEP1002Attributes) private _tokenAttributes;
 
     // geolocation -> tokenId
-    mapping (uint256 => uint256) private _geolocationToTokenId;
+    mapping(uint256 => uint256) private _geolocationToTokenId;
 
     // Token name
     string private _name;
@@ -121,46 +153,77 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
 
     address private _namingToken;
 
-    function init(string memory name_, string memory symbol_, address namingTokenAddr) public initializer {
-        IMEP1002NamingToken(namingTokenAddr).init("MEP1002 Naming Token", "MEP1002NT");
+    event MEP1002TokenUpdateAttr(
+        uint256 indexed tokenId,
+        uint256 indexed geolocation,
+        uint256 indexed namingRightTokenId,
+        string name
+    );
+
+    function init(
+        string memory name_,
+        string memory symbol_,
+        address namingTokenAddr
+    ) external initializer {
+        IMEP1002NamingToken(namingTokenAddr).init(
+            "MEP1002 Naming Token",
+            "MEP1002NT"
+        );
         __MEP1002_init(name_, symbol_, namingTokenAddr);
     }
 
     function mint(uint256 geolocation_) external {
-        if(!geolocation_.isValidCell()) revert InvalidGeolocation();
-        if(_geolocationToTokenId[geolocation_] != 0) revert ERC721TokenAlreadyMinted();
-//        bool hasParent = false;
+        if (!geolocation_.isValidCell()) revert InvalidGeolocation();
+        if (_geolocationToTokenId[geolocation_] != 0)
+            revert ERC721TokenAlreadyMinted();
+        //        bool hasParent = false;
         uint256 res = geolocation_.getResolution();
         if (res != H3Library.getMinResolution()) revert InvalidGeolocation();
-//        for (uint256 i = 0; i < res - H3Library.getMinResolution(); i++) {
-//            uint256 parentGeolocation = geolocation_.cellToParent(res - (i + 1));
-//            console.log("parentGeolocation",parentGeolocation);
-//            if(parentGeolocation == 0) break;
-//            if(parentGeolocation == geolocation_) break;
-//            this.mint(parentGeolocation);
-//            hasParent = true;
-//        }
+        //        for (uint256 i = 0; i < res - H3Library.getMinResolution(); i++) {
+        //            uint256 parentGeolocation = geolocation_.cellToParent(res - (i + 1));
+        //            console.log("parentGeolocation",parentGeolocation);
+        //            if(parentGeolocation == 0) break;
+        //            if(parentGeolocation == geolocation_) break;
+        //            this.mint(parentGeolocation);
+        //            hasParent = true;
+        //        }
         _tokenIds.increment();
         uint256 tokenId = _tokenIds.current();
         uint256 parentTokenId;
-//        if(hasParent) {
-//            parentTokenId = tokenId - 1;
-//            _nestMint(address(this), tokenId, parentTokenId, "");
-//        }else {
+        //        if(hasParent) {
+        //            parentTokenId = tokenId - 1;
+        //            _nestMint(address(this), tokenId, parentTokenId, "");
+        //        }else {
         _safeMint(address(this), tokenId);
-//        }
-        IMEP1002NamingToken(_namingToken).mint(tx.origin, tokenId);
-        _tokenAttributes[tokenId] = MEP1002Attributes({parentTokenId: parentTokenId, geolocation: geolocation_, namingRightTokenId: tokenId, name: geolocation_.toString()});
+        //        }
+        IMEP1002NamingToken(_namingToken).mint(_msgSender(), tokenId);
+        _tokenAttributes[tokenId] = MEP1002Attributes({
+            parentTokenId: parentTokenId,
+            geolocation: geolocation_,
+            namingRightTokenId: tokenId,
+            name: geolocation_.toString()
+        });
         _geolocationToTokenId[geolocation_] = tokenId;
-        emit MEP1002TokenUpdateAttr(tokenId, _tokenAttributes[tokenId].geolocation, _tokenAttributes[tokenId].namingRightTokenId, _tokenAttributes[tokenId].name);
+        emit MEP1002TokenUpdateAttr(
+            tokenId,
+            _tokenAttributes[tokenId].geolocation,
+            _tokenAttributes[tokenId].namingRightTokenId,
+            _tokenAttributes[tokenId].name
+        );
     }
 
-    function setName(uint256 tokenId, string memory name_) public {
+    function setName(uint256 tokenId, string memory name_) external {
         _requireMinted(tokenId);
-        if (IERC721(_namingToken).ownerOf(tokenId) != _msgSender()) revert NoNamingPermission();
+        if (IERC721(_namingToken).ownerOf(tokenId) != _msgSender())
+            revert NoNamingPermission();
 
         _tokenAttributes[tokenId].name = name_;
-        emit MEP1002TokenUpdateAttr(tokenId, _tokenAttributes[tokenId].geolocation, _tokenAttributes[tokenId].namingRightTokenId, _tokenAttributes[tokenId].name);
+        emit MEP1002TokenUpdateAttr(
+            tokenId,
+            _tokenAttributes[tokenId].geolocation,
+            _tokenAttributes[tokenId].namingRightTokenId,
+            _tokenAttributes[tokenId].name
+        );
     }
 
     function geolocation(uint256 tokenId) external view returns (uint256) {
@@ -168,37 +231,36 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
         return _tokenAttributes[tokenId].geolocation;
     }
 
-    function getAttr(uint256 tokenId) external view returns (MEP1002Attributes memory) {
+    function getAttr(
+        uint256 tokenId
+    ) external view returns (MEP1002Attributes memory) {
         _requireMinted(tokenId);
         return _tokenAttributes[tokenId];
     }
 
-    function geolocationToTokenId(uint256 geolocation_) external view returns (uint256) {
+    function geolocationToTokenId(
+        uint256 geolocation_
+    ) external view returns (uint256) {
         return _geolocationToTokenId[geolocation_];
-    }
-
-    /**
-     * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
-     */
-    function __MEP1002_init(string memory name_, string memory symbol_, address namingToken_) internal onlyInitializing {
-        __MEP1002_init_unchained(name_, symbol_, namingToken_);
-    }
-
-    function __MEP1002_init_unchained(string memory name_, string memory symbol_,address namingToken_) internal onlyInitializing {
-        _name = name_;
-        _symbol = symbol_;
-        _namingToken = namingToken_;
     }
 
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165Upgradeable, IERC165Upgradeable) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    )
+        public
+        view
+        virtual
+        override(ERC165Upgradeable, IERC165Upgradeable)
+        returns (bool)
+    {
         return
-        interfaceId == type(IERC721Upgradeable).interfaceId ||
-        interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
-        interfaceId == type(IERC6059).interfaceId ||
-        super.supportsInterface(interfaceId);
+            interfaceId == type(IERC721Upgradeable).interfaceId ||
+            interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
+            interfaceId == type(IERC6059).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     /**
@@ -218,7 +280,9 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+    function tokenURI(
+        uint256 tokenId
+    ) public view virtual override returns (string memory) {
         _requireMinted(tokenId);
 
         string memory baseURI = _baseURI();
@@ -239,6 +303,27 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
             )
         );
         return result;
+    }
+
+    /**
+     * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
+     */
+    function __MEP1002_init(
+        string memory name_,
+        string memory symbol_,
+        address namingToken_
+    ) internal onlyInitializing {
+        __MEP1002_init_unchained(name_, symbol_, namingToken_);
+    }
+
+    function __MEP1002_init_unchained(
+        string memory name_,
+        string memory symbol_,
+        address namingToken_
+    ) internal onlyInitializing {
+        _name = name_;
+        _symbol = symbol_;
+        _namingToken = namingToken_;
     }
 
     /**
@@ -516,9 +601,9 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
     ) private view {
         for (uint256 i; i < _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP; ) {
             (
-            address nextOwner,
-            uint256 nextOwnerTokenId,
-            bool isNft
+                address nextOwner,
+                uint256 nextOwnerTokenId,
+                bool isNft
             ) = IERC6059(targetContract).directOwnerOf(targetId);
             // If there's a final address, we're good. There's no loop.
             if (!isNft) {
@@ -531,9 +616,9 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
             // We reuse the parameters to save some contract size
             targetContract = nextOwner;
             targetId = nextOwnerTokenId;
-        unchecked {
-            ++i;
-        }
+            unchecked {
+                ++i;
+            }
         }
         revert NestableTooDeep();
     }
@@ -660,7 +745,13 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
      */
     function ownerOf(
         uint256 tokenId
-    ) public view virtual override(IERC6059, IERC721Upgradeable) returns (address) {
+    )
+        public
+        view
+        virtual
+        override(IERC6059, IERC721Upgradeable)
+        returns (address)
+    {
         (address owner, uint256 ownerTokenId, bool isNft) = directOwnerOf(
             tokenId
         );
@@ -771,23 +862,23 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
                     children[i].tokenId
                 );
             delete _childIsInActive[children[i].contractAddress][
-            children[i].tokenId
+                children[i].tokenId
             ];
-        unchecked {
-            // At this point we know pendingRecursiveBurns must be at least 1
-            pendingRecursiveBurns = maxChildrenBurns - totalChildBurns;
-        }
+            unchecked {
+                // At this point we know pendingRecursiveBurns must be at least 1
+                pendingRecursiveBurns = maxChildrenBurns - totalChildBurns;
+            }
             // We substract one to the next level to count for the token being burned, then add it again on returns
             // This is to allow the behavior of 0 recursive burns meaning only the current token is deleted.
             totalChildBurns +=
-            IERC6059(children[i].contractAddress).burn(
-                children[i].tokenId,
-                pendingRecursiveBurns - 1
-            ) +
-            1;
-        unchecked {
-            ++i;
-        }
+                IERC6059(children[i].contractAddress).burn(
+                    children[i].tokenId,
+                    pendingRecursiveBurns - 1
+                ) +
+                1;
+            unchecked {
+                ++i;
+            }
         }
         // Can't remove before burning child since child will call back to get root owner
         delete _directOwners[tokenId];
@@ -912,8 +1003,8 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
     ) internal view virtual returns (bool) {
         address owner = ownerOf(tokenId);
         return (spender == owner ||
-        isApprovedForAll(owner, spender) ||
-        getApproved(tokenId) == spender);
+            isApprovedForAll(owner, spender) ||
+            getApproved(tokenId) == spender);
     }
 
     /**
@@ -934,8 +1025,8 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
         }
         // Otherwise, the owner or approved address can
         return (spender == owner ||
-        isApprovedForAll(owner, spender) ||
-        getApproved(tokenId) == spender);
+            isApprovedForAll(owner, spender) ||
+            getApproved(tokenId) == spender);
     }
 
     /**
@@ -977,12 +1068,12 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
     ) private returns (bool) {
         if (to.isContract()) {
             try
-            IERC721Receiver(to).onERC721Received(
-                _msgSender(),
-                from,
-                tokenId,
-                data
-            )
+                IERC721Receiver(to).onERC721Received(
+                    _msgSender(),
+                    from,
+                    tokenId,
+                    data
+                )
             returns (bytes4 retval) {
                 return retval == IERC721Receiver.onERC721Received.selector;
             } catch (bytes memory reason) {
@@ -1118,7 +1209,10 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
      *  rootOwner of the previous parent.
      * @param tokenId ID of the parent token for which to reject all of the pending tokens
      */
-    function rejectAllChildren(uint256 tokenId, uint256 maxRejections) public virtual onlyApprovedOrOwner(tokenId) {
+    function rejectAllChildren(
+        uint256 tokenId,
+        uint256 maxRejections
+    ) public virtual onlyApprovedOrOwner(tokenId) {
         _rejectAllChildren(tokenId, maxRejections);
     }
 
@@ -1134,10 +1228,10 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
      * @param maxRejections Maximum number of expected children to reject, used to prevent from
      *  rejecting children which arrive just before this operation.
      */
-    function _rejectAllChildren(uint256 tokenId, uint256 maxRejections)
-    internal
-    virtual
-    {
+    function _rejectAllChildren(
+        uint256 tokenId,
+        uint256 maxRejections
+    ) internal virtual {
         if (_pendingChildren[tokenId].length > maxRejections)
             revert UnexpectedNumberOfChildren();
 

@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-import "hardhat/console.sol";
+pragma solidity ^0.8.18;
 
 library H3Library {
-
     uint256 private constant _MIN_RESOLUTION = 7;
     uint256 private constant _MAX_RESOLUTION = 15;
 
@@ -28,7 +26,6 @@ library H3Library {
     uint256 private constant H3_RES_MASK = 15 << H3_RES_OFFSET;
     uint256 private constant H3_RES_MASK_NEGATIVE = ~H3_RES_MASK;
 
-
     function getMinResolution() internal pure returns (uint256) {
         return _MIN_RESOLUTION;
     }
@@ -38,11 +35,11 @@ library H3Library {
 
         if (getMode(h3) != H3_CELL_MODE) return false;
 
-        if(getReservedBits(h3) != 0) return false;
+        if (getReservedBits(h3) != 0) return false;
 
         uint256 baseCell = getBaseCell(h3);
 
-        if(baseCell < 0 || baseCell > NUM_BASE_CELLS) {
+        if (baseCell < 0 || baseCell > NUM_BASE_CELLS) {
             return false;
         }
 
@@ -56,9 +53,9 @@ library H3Library {
         for (uint256 i = 1; i <= res; i++) {
             uint256 digit = getIndexDigit(h3, i);
 
-            if(!foundFirstNonZeroDigit && digit != CENTER_DIGIT) {
+            if (!foundFirstNonZeroDigit && digit != CENTER_DIGIT) {
                 foundFirstNonZeroDigit = true;
-                if(_isBaseCellPentagon(baseCell) && digit == K_AXES_DIGIT) {
+                if (_isBaseCellPentagon(baseCell) && digit == K_AXES_DIGIT) {
                     return false;
                 }
             }
@@ -67,7 +64,6 @@ library H3Library {
                 return false;
             }
         }
-
 
         for (uint256 i = res + 1; i <= MAX_H3_RES; i++) {
             if (getIndexDigit(h3, i) != INVALID_DIGIT) {
@@ -82,13 +78,16 @@ library H3Library {
         return ((h3 & H3_RES_MASK) >> H3_RES_OFFSET);
     }
 
-    function cellToParent(uint256 h3Index, uint256 parentRes) internal view returns (uint256) {
+    function cellToParent(
+        uint256 h3Index,
+        uint256 parentRes
+    ) internal pure returns (uint256) {
         uint256 childRes = getResolution(h3Index);
         if (parentRes < 0 || parentRes > MAX_H3_RES) {
             return 0;
         } else if (parentRes > childRes) {
             return 0;
-        } else if(parentRes == childRes) {
+        } else if (parentRes == childRes) {
             return h3Index;
         }
 
@@ -102,12 +101,24 @@ library H3Library {
         return parentH;
     }
 
-    function h3SetIndexDigit(uint256 h3Index, uint256 res, uint256 digit) internal pure returns (uint256) {
-        return (h3Index & ~((H3_DIGIT_MASK << (MAX_H3_RES - (res)) * H3_PER_DIGIT_OFFSET)))| (digit << (MAX_H3_RES - res)) * H3_PER_DIGIT_OFFSET;
+    function h3SetIndexDigit(
+        uint256 h3Index,
+        uint256 res,
+        uint256 digit
+    ) internal pure returns (uint256) {
+        return
+            (h3Index &
+                ~(
+                    (H3_DIGIT_MASK <<
+                        ((MAX_H3_RES - (res)) * H3_PER_DIGIT_OFFSET))
+                )) | ((digit << (MAX_H3_RES - res)) * H3_PER_DIGIT_OFFSET);
     }
 
-    function h3SetResolution(uint256 h3Index, uint256 parentRes) internal view returns (uint256) {
-        return (h3Index & H3_RES_MASK_NEGATIVE) | parentRes << H3_RES_OFFSET;
+    function h3SetResolution(
+        uint256 h3Index,
+        uint256 parentRes
+    ) internal pure returns (uint256) {
+        return (h3Index & H3_RES_MASK_NEGATIVE) | (parentRes << H3_RES_OFFSET);
     }
 
     function getHighBit(uint256 h3) internal pure returns (uint256) {
@@ -126,22 +137,148 @@ library H3Library {
         return (h3 & H3_BC_MASK) >> H3_BC_OFFSET;
     }
 
-    function getIndexDigit(uint256 h3, uint256 res) internal pure returns (uint256) {
-        return (h3 >> (MAX_H3_RES - res) * H3_PER_DIGIT_OFFSET) & H3_DIGIT_MASK;
+    function getIndexDigit(
+        uint256 h3,
+        uint256 res
+    ) internal pure returns (uint256) {
+        return
+            (h3 >> ((MAX_H3_RES - res) * H3_PER_DIGIT_OFFSET)) & H3_DIGIT_MASK;
     }
 
-
-    function _isBaseCellPentagon(uint256 baseCell) internal pure returns (bool) {
-        if(baseCell < 0 || baseCell >= NUM_BASE_CELLS) {
+    function _isBaseCellPentagon(
+        uint256 baseCell
+    ) internal pure returns (bool) {
+        if (baseCell < 0 || baseCell >= NUM_BASE_CELLS) {
             return false;
         }
         return baseCellData(baseCell) == 1;
     }
 
     function baseCellData(uint256 baseCell) internal pure returns (uint8) {
-        uint8[NUM_BASE_CELLS] memory baseCellDatas = [0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0];
+        uint8[NUM_BASE_CELLS] memory baseCellDatas = [
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+        ];
         return baseCellDatas[baseCell];
     }
-
-
 }

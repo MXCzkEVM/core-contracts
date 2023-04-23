@@ -8,7 +8,7 @@
     "export:abi": "pnpm hardhat clear-abi && pnpm hardhat export-abi",
     "export:docs": "pnpm hardhat docgen && pnpm prettier --write ./docs/reference/contract-documentation/**/*.md",
     "clean": "rm -rf abis cache && pnpm hardhat clean",
-    "lint:sol": "pnpm prettier '**/*.sol' --write && pnpm solhint 'contracts/**/*.sol' --fix",
+    "lint:sol": "pnpm prettier **/*.sol --write && pnpm solhint contracts/**/*.sol --fix",
     "eslint": "pnpm exec eslint --ignore-path .eslintignore --ext .js,.ts .",
     "eslint:fix": "pnpm exec eslint --ignore-path .eslintignore --ext .js,.ts . --fix",
     "test": "./scripts/download_solc.sh && pnpm hardhat test --grep '^[^integration]'",
@@ -16,13 +16,18 @@
     "test:coverage": "pnpm coverage",
     "test:integration": "TEST_TYPE=integration ./test/test_integration.sh",
     "test:all": "pnpm run test && pnpm run test:integration",
-    "deploy:hardhat": "pnpm hardhat deploy_L1 --network arb_goerli --dao-vault 0x67FBaF4596207631c12a437A0bB618066471B2dB --team-vault 0x67FBaF4596207631c12a437A0bB618066471B2dB --l2-genesis-block-hash 0xc2aaf43ee2e2bfc28a0cf76d30b92caf5073df07bb0b916b9355230fb50cec58 --bridge-funder-private-key ${privateKey} --bridge-fund 0xff --oracle-prover 0x67FBaF4596207631c12a437A0bB618066471B2dB --solo-proposer 0x67FBaF4596207631c12a437A0bB618066471B2dB --confirmations 1",
+    "deployMEP1002Token": "pnpm hardhat deploy_MEP1002Token --network mxc_testnet",
+    "generateMEP1002Token": "pnpm hardhat generate_MEP1002Token --network mxc_testnet --token-address 0x090F8847888677aE8661FBDe6a22A80C2045209A",
     "sizer": "pnpm hardhat size-contracts"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.3",
     "@openzeppelin/contracts-upgradeable": "^4.8.3",
+    "@openzeppelin/hardhat-upgrades": "^1.22.1",
+    "chalk": "4.1.2",
     "h3-js": "^4.1.0",
+    "hardhat-abi-exporter": "^2.10.1",
+    "hardhat-contract-sizer": "^2.8.0",
     "mocha": "^10.2.0"
   },
   "devDependencies": {

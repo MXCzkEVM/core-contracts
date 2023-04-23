@@ -126,9 +126,38 @@ describe('MEP1002Token', function () {
         )
       })
 
+    it("cannot set name without naming Token", async function() {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect(MEP1002Token.connect(addrs[1]).setName(1, "test")).to.be.revertedWithCustomError(
+        MEP1002Token,
+        "NoNamingPermission")
+    })
+
+    it("should return balance", async function() {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect(await MEP1002Token.balanceOf(MEP1002Token.address)).to.equal(1);
+      await expect(await MEP1002Token.balanceOf(owner.address)).to.equal(0);
+    });
+
     it("should mint token event", async function() {
       await expect(MEP1002Token.mint(h3IndexRes7Big)).to.emit(MEP1002Token, "MEP1002TokenUpdateAttr").withArgs(1, h3IndexRes7Big, 1, h3IndexRes7Big.toString());
       await expect(MEP1002Token.setName(1,"test")).to.emit(MEP1002Token, "MEP1002TokenUpdateAttr").withArgs(1, h3IndexRes7Big, 1, "test");
+    });
+
+    it("should setting name", async function() {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect((await MEP1002Token.getAttr(1))["3"]).to.be.equal(h3IndexRes7Big.toString());
+      await expect(await MEP1002Token.setName(1, "test")).to.be.ok;
+      await expect((await MEP1002Token.getAttr(1))["3"]).to.be.equal("test");
+    });
+
+    it("should return attr", async function() {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      // [parentId, geolocation, namingRightTokenId, name]
+      await expect((await MEP1002Token.getAttr(1))["0"]).to.be.equal(0);
+      await expect((await MEP1002Token.getAttr(1))["1"]).to.be.equal(h3IndexRes7Big);
+      await expect((await MEP1002Token.getAttr(1))["2"]).to.be.equal(1);
+      await expect((await MEP1002Token.getAttr(1))["3"]).to.be.equal(h3IndexRes7Big.toString());
     });
 
 
@@ -142,36 +171,31 @@ describe('MEP1002Token', function () {
         // await expect(await MEP1002Token.mint(h3IndexRes8ParentBig)).to.be.ok;
       // });
   })
-    describe("naming token", async function() {
-      it("should setting name", async function() {
-        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
-        await expect((await MEP1002Token.getAttr(1))["3"]).to.be.equal(h3IndexRes7Big.toString());
-        await expect(await MEP1002Token.setName(1, "test")).to.be.ok;
-        // [parentId, geolocation, namingRightTokenId, name]
-        await expect((await MEP1002Token.getAttr(1))["0"]).to.be.equal(0);
-        await expect((await MEP1002Token.getAttr(1))["1"]).to.be.equal(h3IndexRes7Big);
-        await expect((await MEP1002Token.getAttr(1))["2"]).to.be.equal(1);
-        await expect((await MEP1002Token.getAttr(1))["3"]).to.be.equal("test");
-      });
+  describe("Naming token", async function() {
 
-      it("cannot set name without naming Token", async function() {
-        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
-        await expect(MEP1002Token.connect(addrs[1]).setName(1, "test")).to.be.revertedWithCustomError(
-          MEP1002Token,
-          "NoNamingPermission")
-      })
 
-      it("should transfer naming token", async function() {
+    it("should transfer naming token", async function() {
         await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
         await expect(MEP1002NamingToken.transferFrom(owner.address, addrs[1].address, 1)).to.be.ok;
-        await expect(MEP1002Token.setName(1, "test")).to.be.revertedWithCustomError(
-          MEP1002Token,
-          "NoNamingPermission")
-      });
-        await expect(MEP1002Token.connect(addrs[1]).setName(1, "test")).to.be.ok;
-        await expect(MEP1002Token.balanceOf(addrs[1].address)).to.equal(1);
-        await expect(MEP1002Token.balanceOf(owner.address)).to.equal(0);
+    });
+
+
+    it("should transfer by approve", async function() {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect(MEP1002NamingToken.approve(addrs[1].address, 1)).to.be.ok;
+      await expect(MEP1002NamingToken.connect(addrs[1]).transferFrom(owner.address, addrs[1].address, 1)).to.be.ok;
+    });
+
+    it("cannot transfer not owner or approved", async function () {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect(MEP1002NamingToken.connect(addrs[1]).transferFrom(addrs[1].address, owner.address, 1)).to.be.revertedWith(
+        "ERC721: caller is not token owner or approved"
+      );
     })
+
+  })
+
+
 
 
     describe('Interface support', async function() {

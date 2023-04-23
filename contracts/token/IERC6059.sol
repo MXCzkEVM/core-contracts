@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
-pragma solidity ^0.8.16;
-
+pragma solidity ^0.8.18;
 
 interface IERC6059 {
     struct DirectOwner {
@@ -70,8 +69,10 @@ interface IERC6059 {
         uint256 childId
     ) external;
 
-    function rejectAllChildren(uint256 parentId, uint256 maxRejections)
-        external;
+    function rejectAllChildren(
+        uint256 parentId,
+        uint256 maxRejections
+    ) external;
 
     function transferChild(
         uint256 tokenId,

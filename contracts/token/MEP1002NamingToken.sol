@@ -8,12 +8,18 @@ import {
 import {
     OwnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-
+import {
+StringsUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 contract MEP1002NamingToken is
     OwnableUpgradeable,
     ERC721Upgradeable,
     IMEP1002NamingToken
 {
+    using StringsUpgradeable for uint256;
+
+    string private _baseUri;
+
     function init(
         string memory name_,
         string memory symbol_
@@ -25,4 +31,28 @@ contract MEP1002NamingToken is
     function mint(address to, uint256 tokenId) external onlyOwner {
         _safeMint(to, tokenId);
     }
+
+    function setBaseURI(string memory baseURI_) external onlyOwner {
+        _baseUri = baseURI_;
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return _baseUri;
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        _requireMinted(tokenId);
+
+        string memory baseURI = _baseURI();
+
+        return bytes(baseURI).length > 0
+        ? string(abi.encodePacked(
+            baseURI,
+            tokenId.toString()
+        ))
+        : "";
+    }
+
+
+
 }

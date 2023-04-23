@@ -21,6 +21,7 @@
     "sizer": "pnpm hardhat size-contracts"
   },
   "dependencies": {
+    "@ericxstone/hardhat-blockscout-verify": "^1.0.2",
     "@openzeppelin/contracts": "^4.8.3",
     "@openzeppelin/contracts-upgradeable": "^4.8.3",
     "@openzeppelin/hardhat-upgrades": "^1.22.1",

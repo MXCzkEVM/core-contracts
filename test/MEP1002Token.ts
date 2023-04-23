@@ -13,6 +13,7 @@ function bn(x: number): BigNumber {
 
 const ADDRESS_ZERO = constants.AddressZero;
 
+
 async function getMEP1002Token(): Promise<{
   MEP1002Token: MEP1002TokenMock;
   MEP1002NamingToken: MEP1002NamingTokenMock,
@@ -37,6 +38,8 @@ describe('MEP1002Token', function () {
     [owner, tokenOwner, ...addrs] = await ethers.getSigners();
     ({ MEP1002Token, MEP1002NamingToken } = await loadFixture(getMEP1002Token));
     await MEP1002Token.init("MEP1002Token","MEP1002", MEP1002NamingToken.address);
+    await MEP1002Token.setBaseURI("https://wannsee-test.mxc.com/");
+    await MEP1002Token.setNamingToken(MEP1002NamingToken.address, "https://wannsee-test-2.mxc.com/");
   });
 
   const h3IndexRes7 = getRandomH3Index(7);
@@ -65,17 +68,17 @@ describe('MEP1002Token', function () {
 
   describe("Minting", async function() {
       it('should mint', async function() {
-        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
       });
 
 
       it("should mint naming token", async function() {
-        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
         await expect(await MEP1002NamingToken.balanceOf(owner.address)).to.equal(1);
       });
 
       it("should geolocation", async function() {
-        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
         await expect(await MEP1002Token.geolocation(1)).to.equal(h3IndexRes7Big);
         await expect(await MEP1002Token.geolocationToTokenId(h3IndexRes7Big)).to.equal(1);
       })
@@ -87,54 +90,54 @@ describe('MEP1002Token', function () {
       )
     })
 
-      it('cannot mint already minted token', async function() {
-        await MEP1002Token.mint(h3IndexRes7Big);
-        await expect(MEP1002Token.mint(h3IndexRes7Big)).to.be.revertedWithCustomError(
-          MEP1002Token,
-          'ERC721TokenAlreadyMinted',
-        );
-        await expect(await MEP1002Token.balanceOf(MEP1002Token.address)).to.equal(1);
-        await expect(await MEP1002NamingToken.balanceOf(owner.address)).to.equal(1);
-      })
+    it('cannot mint already minted token', async function() {
+      await MEP1002Token.mint(h3IndexRes7Big);
+      await expect(MEP1002Token.mint(h3IndexRes7Big)).to.be.revertedWithCustomError(
+        MEP1002Token,
+        'ERC721TokenAlreadyMinted',
+      );
+      await expect(await MEP1002Token.balanceOf(MEP1002Token.address)).to.equal(1);
+      await expect(await MEP1002NamingToken.balanceOf(owner.address)).to.equal(1);
+    })
 
-      it("cannot mint res not 7", async function() {
-        await expect(MEP1002Token.mint(BigNumber.from(`0x${getRandomH3Index(1)}`))).to.be.revertedWithCustomError(
-          MEP1002Token,
-          "InvalidGeolocation"
-        );
-        await expect(MEP1002Token.mint(BigNumber.from(`0x${getRandomH3Index(2)}`))).to.be.revertedWithCustomError(
-          MEP1002Token,
-          "InvalidGeolocation"
-        );
-        await expect(MEP1002Token.mint(h3IndexRes8Big)).to.be.revertedWithCustomError(
-          MEP1002Token,
-          "InvalidGeolocation"
-        );
-        await expect(MEP1002Token.mint(BigNumber.from(`0x${getRandomH3Index(9)}`))).to.be.revertedWithCustomError(
-          MEP1002Token,
-          "InvalidGeolocation"
-        );
-        await expect(await MEP1002Token.balanceOf(MEP1002Token.address)).to.equal(0);
-        await expect(await MEP1002NamingToken.balanceOf(owner.address)).to.equal(0);
-      })
+    it("cannot mint res not 7", async function() {
+      await expect(MEP1002Token.mint(BigNumber.from(`0x${getRandomH3Index(1)}`))).to.be.revertedWithCustomError(
+        MEP1002Token,
+        "InvalidGeolocation"
+      );
+      await expect(MEP1002Token.mint(BigNumber.from(`0x${getRandomH3Index(2)}`))).to.be.revertedWithCustomError(
+        MEP1002Token,
+        "InvalidGeolocation"
+      );
+      await expect(MEP1002Token.mint(h3IndexRes8Big)).to.be.revertedWithCustomError(
+        MEP1002Token,
+        "InvalidGeolocation"
+      );
+      await expect(MEP1002Token.mint(BigNumber.from(`0x${getRandomH3Index(9)}`))).to.be.revertedWithCustomError(
+        MEP1002Token,
+        "InvalidGeolocation"
+      );
+      await expect(await MEP1002Token.balanceOf(MEP1002Token.address)).to.equal(0);
+      await expect(await MEP1002NamingToken.balanceOf(owner.address)).to.equal(0);
+    })
 
-      it("cannot transfer", async function() {
-        await MEP1002Token.mint(h3IndexRes7Big);
-        await expect(MEP1002Token.connect(owner).transferFrom(owner.address, tokenOwner.address, 1)).to.be.revertedWithCustomError(
-          MEP1002Token,
-          "NotApprovedOrDirectOwner"
-        )
-      })
+    it("cannot transfer", async function() {
+      await MEP1002Token.mint(h3IndexRes7Big);
+      await expect(MEP1002Token.connect(owner).transferFrom(owner.address, tokenOwner.address, 1)).to.be.revertedWithCustomError(
+        MEP1002Token,
+        "NotApprovedOrDirectOwner"
+      )
+    })
 
     it("cannot set name without naming Token", async function() {
-      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
       await expect(MEP1002Token.connect(addrs[1]).setName(1, "test")).to.be.revertedWithCustomError(
         MEP1002Token,
         "NoNamingPermission")
     })
-
+  
     it("should return balance", async function() {
-      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
       await expect(await MEP1002Token.balanceOf(MEP1002Token.address)).to.equal(1);
       await expect(await MEP1002Token.balanceOf(owner.address)).to.equal(0);
     });
@@ -145,53 +148,61 @@ describe('MEP1002Token', function () {
     });
 
     it("should setting name", async function() {
-      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
-      await expect((await MEP1002Token.getAttr(1))["3"]).to.be.equal(h3IndexRes7Big.toString());
-      await expect(await MEP1002Token.setName(1, "test")).to.be.ok;
-      await expect((await MEP1002Token.getAttr(1))["3"]).to.be.equal("test");
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
+      await expect((await MEP1002Token.getAttr(1))["3"]).to.equal(h3IndexRes7Big.toString());
+      await expect(await MEP1002Token.setName(1, "test")).to.ok;
+      await expect((await MEP1002Token.getAttr(1))["3"]).to.equal("test");
     });
 
     it("should return attr", async function() {
-      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
       // [parentId, geolocation, namingRightTokenId, name]
-      await expect((await MEP1002Token.getAttr(1))["0"]).to.be.equal(0);
-      await expect((await MEP1002Token.getAttr(1))["1"]).to.be.equal(h3IndexRes7Big);
-      await expect((await MEP1002Token.getAttr(1))["2"]).to.be.equal(1);
-      await expect((await MEP1002Token.getAttr(1))["3"]).to.be.equal(h3IndexRes7Big.toString());
+      await expect((await MEP1002Token.getAttr(1))["0"]).to.equal(0);
+      await expect((await MEP1002Token.getAttr(1))["1"]).to.equal(h3IndexRes7Big);
+      await expect((await MEP1002Token.getAttr(1))["2"]).to.equal(1);
+      await expect((await MEP1002Token.getAttr(1))["3"]).to.equal(h3IndexRes7Big.toString());
+    });
+
+    it("should get uri", async function() {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
+      await expect(await MEP1002Token.tokenURI(1)).to.equal(`https://wannsee-test.mxc.com/1?parentTokenId=0&geolocation=${h3IndexRes7Big.toString()}&namingRightTokenId=1&name=${h3IndexRes7Big.toString()}`);
     });
 
 
-
     // it('should mint children both mint parent', async function() {
-      //   await expect(await MEP1002Token.mint(h3IndexRes8Big)).to.be.ok;
+      //   await expect(await MEP1002Token.mint(h3IndexRes8Big)).to.ok;
         // await expect(await MEP1002Token.geolocation(2)).to.equal(h3IndexRes8Big);
         // await expect(await MEP1002Token.geolocationToTokenId(h3IndexRes8ParentBig)).to.equal(1);
         // await expect(await MEP1002Token.geolocation(2)).to.equal(h3IndexRes8Big);
         // await expect(await MEP1002Token.geolocationToTokenId(h3IndexRes8Big)).to.equal(2);
-        // await expect(await MEP1002Token.mint(h3IndexRes8ParentBig)).to.be.ok;
+        // await expect(await MEP1002Token.mint(h3IndexRes8ParentBig)).to.ok;
       // });
   })
   describe("Naming token", async function() {
 
-
     it("should transfer naming token", async function() {
-        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+        await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
         await expect(MEP1002NamingToken.transferFrom(owner.address, addrs[1].address, 1)).to.be.ok;
     });
 
 
     it("should transfer by approve", async function() {
-      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
       await expect(MEP1002NamingToken.approve(addrs[1].address, 1)).to.be.ok;
       await expect(MEP1002NamingToken.connect(addrs[1]).transferFrom(owner.address, addrs[1].address, 1)).to.be.ok;
     });
 
     it("cannot transfer not owner or approved", async function () {
-      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.be.ok;
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
       await expect(MEP1002NamingToken.connect(addrs[1]).transferFrom(addrs[1].address, owner.address, 1)).to.be.revertedWith(
         "ERC721: caller is not token owner or approved"
       );
     })
+
+    it("should get token uri", async function() {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
+      await expect(await MEP1002NamingToken.tokenURI(1)).to.equal("https://wannsee-test-2.mxc.com/1");
+    });
 
   })
 

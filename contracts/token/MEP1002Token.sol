@@ -43,6 +43,9 @@ import {
 import {
     Initializable
 } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {
+    OwnableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 
 import {H3Library} from "../libs/H3Library.sol";
@@ -86,8 +89,7 @@ error NoNamingPermission();
  */
 
 contract MEP1002Token is
-    Initializable,
-    ContextUpgradeable,
+    OwnableUpgradeable,
     ERC165Upgradeable,
     ERC721Holder,
     IERC721Upgradeable,
@@ -153,6 +155,8 @@ contract MEP1002Token is
 
     address private _namingToken;
 
+    string private _baseUri;
+
     event MEP1002TokenUpdateAttr(
         uint256 indexed tokenId,
         uint256 indexed geolocation,
@@ -169,7 +173,18 @@ contract MEP1002Token is
             "MEP1002 Naming Token",
             "MEP1002NT"
         );
-        __MEP1002_init(name_, symbol_, namingTokenAddr);
+        __MEP1002_init(name_, symbol_);
+        __Ownable_init();
+        _namingToken = namingTokenAddr;
+    }
+
+    function setBaseURI(string memory baseURI_) external onlyOwner {
+        _baseUri = baseURI_;
+    }
+
+    function setNamingToken(address namingTokenAddr, string memory baseURI_) external onlyOwner {
+        _namingToken = namingTokenAddr;
+        IMEP1002NamingToken(namingTokenAddr).setBaseURI(baseURI_);
     }
 
     function mint(uint256 geolocation_) external {
@@ -288,21 +303,21 @@ contract MEP1002Token is
         string memory baseURI = _baseURI();
 
         MEP1002Attributes memory attrs = _tokenAttributes[tokenId];
-        string memory metadataURI = string(abi.encodePacked(baseURI, tokenId));
-        string memory result = string(
+
+        return bytes(baseURI).length > 0 ? string(
             abi.encodePacked(
-                metadataURI,
-                "&parentTokenId=",
+                baseURI,
+                tokenId.toString(),
+                "?parentTokenId=",
                 attrs.parentTokenId.toString(),
                 "&geolocation=",
                 attrs.geolocation.toString(),
                 "&namingRightTokenId=",
                 attrs.namingRightTokenId.toString(),
-                "&name",
+                "&name=",
                 attrs.name
             )
-        );
-        return result;
+        ): "";
     }
 
     /**
@@ -310,20 +325,17 @@ contract MEP1002Token is
      */
     function __MEP1002_init(
         string memory name_,
-        string memory symbol_,
-        address namingToken_
+        string memory symbol_
     ) internal onlyInitializing {
-        __MEP1002_init_unchained(name_, symbol_, namingToken_);
+        __MEP1002_init_unchained(name_, symbol_);
     }
 
     function __MEP1002_init_unchained(
         string memory name_,
-        string memory symbol_,
-        address namingToken_
+        string memory symbol_
     ) internal onlyInitializing {
         _name = name_;
         _symbol = symbol_;
-        _namingToken = namingToken_;
     }
 
     /**
@@ -332,7 +344,7 @@ contract MEP1002Token is
      * by default, can be overridden in child contracts.
      */
     function _baseURI() internal view virtual returns (string memory) {
-        return "";
+        return _baseUri;
     }
 
     // -------------------------- MODIFIERS ----------------------------

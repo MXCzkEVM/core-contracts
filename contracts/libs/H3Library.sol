@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import "hardhat/console.sol";
 
 library H3Library {
 
@@ -25,6 +26,7 @@ library H3Library {
     uint256 private constant H3_CELL_MODE = 1;
     uint256 private constant H3_RES_OFFSET = 52;
     uint256 private constant H3_RES_MASK = 15 << H3_RES_OFFSET;
+    uint256 private constant H3_RES_MASK_NEGATIVE = ~H3_RES_MASK;
 
 
     function getMinResolution() internal pure returns (uint256) {
@@ -80,21 +82,19 @@ library H3Library {
         return ((h3 & H3_RES_MASK) >> H3_RES_OFFSET);
     }
 
-    function cellToParent(uint256 h3Index) internal pure returns (uint256) {
+    function cellToParent(uint256 h3Index, uint256 parentRes) internal view returns (uint256) {
         uint256 childRes = getResolution(h3Index);
-        uint256 parentRes = childRes - 1;
-        if (parentRes < _MIN_RESOLUTION) {
+        if (parentRes < 0 || parentRes > MAX_H3_RES) {
             return 0;
-        }
-
-        if (parentRes == childRes) {
+        } else if (parentRes > childRes) {
+            return 0;
+        } else if(parentRes == childRes) {
             return h3Index;
         }
 
         uint256 parentH = h3SetResolution(h3Index, parentRes);
 
-        if(parentH == 0) return 0;
-
+        // TODO: fix
         for (uint256 i = parentRes + 1; i <= childRes; i++) {
             parentH = h3SetIndexDigit(parentH, i, H3_DIGIT_MASK);
         }
@@ -102,33 +102,12 @@ library H3Library {
         return parentH;
     }
 
-    function h3SetIndexDigit(uint256 h3Index, uint256 digitIndex, uint256 digitValue) internal pure returns (uint256) {
-        uint64 newH3Index;
-        assembly {
-            let p := add(h3Index, sub(31, mul(digitIndex, 3)))
-            mstore8(p, digitValue)
-            newH3Index := h3Index
-        }
-        return newH3Index;
+    function h3SetIndexDigit(uint256 h3Index, uint256 res, uint256 digit) internal pure returns (uint256) {
+        return (h3Index & ~((H3_DIGIT_MASK << (MAX_H3_RES - (res)) * H3_PER_DIGIT_OFFSET)))| (digit << (MAX_H3_RES - res)) * H3_PER_DIGIT_OFFSET;
     }
 
-    function h3SetResolution(uint256 h3Index, uint256 parentRes) internal pure returns (uint256) {
-        uint256 childRes = getResolution(h3Index);
-
-        uint256 newH3Index = h3Index;
-
-        if (parentRes < childRes) {
-            uint256 numToRemove = childRes - parentRes;
-
-            for (uint256 i = 0; i < numToRemove; i++) {
-//                newH3Index = h3GetParent(newH3Index);
-
-                newH3Index = h3SetIndexDigit(newH3Index, childRes - i, CENTER_DIGIT);
-            }
-        }else {
-            return 0;
-        }
-        return newH3Index;
+    function h3SetResolution(uint256 h3Index, uint256 parentRes) internal view returns (uint256) {
+        return (h3Index & H3_RES_MASK_NEGATIVE) | parentRes << H3_RES_OFFSET;
     }
 
     function getHighBit(uint256 h3) internal pure returns (uint256) {

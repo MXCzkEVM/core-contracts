@@ -66,7 +66,7 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
     using StringsUpgradeable for uint256;
     using H3Library for uint256;
 
-    event MEP1002TokenUpdateAttr(uint256 indexed tokenId, MEP1002Attributes indexed attr);
+    event MEP1002TokenUpdateAttr(uint256 indexed tokenId, uint256 indexed geolocation, uint256 indexed namingRightTokenId, string name);
 
     struct MEP1002Attributes {
         uint256 parentTokenId;
@@ -129,35 +129,52 @@ contract MEP1002Token is Initializable, ContextUpgradeable, ERC165Upgradeable,ER
     function mint(uint256 geolocation_) external {
         if(!geolocation_.isValidCell()) revert InvalidGeolocation();
         if(_geolocationToTokenId[geolocation_] != 0) revert ERC721TokenAlreadyMinted();
-        bool hasParent = false;
-        for (uint256 i = 0; i < geolocation_.getResolution() - H3Library.getMinResolution(); i++) {
-            this.mint(geolocation_.cellToParent());
-            hasParent = true;
-        }
+//        bool hasParent = false;
+        uint256 res = geolocation_.getResolution();
+        if (res != H3Library.getMinResolution()) revert InvalidGeolocation();
+//        for (uint256 i = 0; i < res - H3Library.getMinResolution(); i++) {
+//            uint256 parentGeolocation = geolocation_.cellToParent(res - (i + 1));
+//            console.log("parentGeolocation",parentGeolocation);
+//            if(parentGeolocation == 0) break;
+//            if(parentGeolocation == geolocation_) break;
+//            this.mint(parentGeolocation);
+//            hasParent = true;
+//        }
         _tokenIds.increment();
         uint256 tokenId = _tokenIds.current();
-        if(hasParent) {
-            _nestMint(address(this), tokenId-1, tokenId, "");
-        }else {
-            _safeMint(address(this), tokenId);
-        }
-        IMEP1002NamingToken(_namingToken).mint(_msgSender(), tokenId);
-        _tokenAttributes[tokenId] = MEP1002Attributes({parentTokenId: tokenId-1, geolocation: geolocation_, namingRightTokenId: tokenId, name: ""});
+        uint256 parentTokenId;
+//        if(hasParent) {
+//            parentTokenId = tokenId - 1;
+//            _nestMint(address(this), tokenId, parentTokenId, "");
+//        }else {
+        _safeMint(address(this), tokenId);
+//        }
+        IMEP1002NamingToken(_namingToken).mint(tx.origin, tokenId);
+        _tokenAttributes[tokenId] = MEP1002Attributes({parentTokenId: parentTokenId, geolocation: geolocation_, namingRightTokenId: tokenId, name: geolocation_.toString()});
         _geolocationToTokenId[geolocation_] = tokenId;
-        emit MEP1002TokenUpdateAttr(tokenId, _tokenAttributes[tokenId]);
+        emit MEP1002TokenUpdateAttr(tokenId, _tokenAttributes[tokenId].geolocation, _tokenAttributes[tokenId].namingRightTokenId, _tokenAttributes[tokenId].name);
     }
 
     function setName(uint256 tokenId, string memory name_) public {
         _requireMinted(tokenId);
-        if (IERC721(_namingToken).ownerOf(_tokenAttributes[tokenId].parentTokenId) != _msgSender()) revert NoNamingPermission();
+        if (IERC721(_namingToken).ownerOf(tokenId) != _msgSender()) revert NoNamingPermission();
 
         _tokenAttributes[tokenId].name = name_;
-        emit MEP1002TokenUpdateAttr(tokenId, _tokenAttributes[tokenId]);
+        emit MEP1002TokenUpdateAttr(tokenId, _tokenAttributes[tokenId].geolocation, _tokenAttributes[tokenId].namingRightTokenId, _tokenAttributes[tokenId].name);
     }
 
     function geolocation(uint256 tokenId) external view returns (uint256) {
         _requireMinted(tokenId);
         return _tokenAttributes[tokenId].geolocation;
+    }
+
+    function getAttr(uint256 tokenId) external view returns (MEP1002Attributes memory) {
+        _requireMinted(tokenId);
+        return _tokenAttributes[tokenId];
+    }
+
+    function geolocationToTokenId(uint256 geolocation_) external view returns (uint256) {
+        return _geolocationToTokenId[geolocation_];
     }
 
     /**

@@ -23,6 +23,9 @@ import {
     IERC721MetadataUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
 import {
+    IERC721EnumerableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
+import {
     IERC721Upgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {
@@ -91,9 +94,9 @@ error NoNamingPermission();
 contract MEP1002Token is
     OwnableUpgradeable,
     ERC165Upgradeable,
-    ERC721Holder,
-    IERC721Upgradeable,
+    IERC721EnumerableUpgradeable,
     IERC721MetadataUpgradeable,
+    ERC721Holder,
     IMEP1002,
     IERC6059
 {
@@ -276,6 +279,32 @@ contract MEP1002Token is
             interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
             interfaceId == type(IERC6059).interfaceId ||
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev See {IERC721Enumerable-tokenOfOwnerByIndex}.
+     */
+    function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual override returns (uint256) {
+        require(index < balanceOf(owner), "ERC721Enumerable: owner index out of bounds");
+        if(owner == address(this)) {
+            return index;
+        }
+        return 0;
+    }
+
+    /**
+     * @dev See {IERC721Enumerable-totalSupply}.
+     */
+    function totalSupply() public view virtual override returns (uint256) {
+        return _tokenIds.current();
+    }
+
+    /**
+     * @dev See {IERC721Enumerable-tokenByIndex}.
+     */
+    function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
+        require(index < totalSupply(), "ERC721Enumerable: global index out of bounds");
+        return index;
     }
 
     /**

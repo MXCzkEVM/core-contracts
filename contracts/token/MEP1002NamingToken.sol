@@ -6,6 +6,9 @@ import {
     ERC721Upgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {
+    ERC721EnumerableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {
     OwnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {
@@ -13,7 +16,7 @@ StringsUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 contract MEP1002NamingToken is
     OwnableUpgradeable,
-    ERC721Upgradeable,
+    ERC721EnumerableUpgradeable,
     IMEP1002NamingToken
 {
     using StringsUpgradeable for uint256;
@@ -24,7 +27,7 @@ contract MEP1002NamingToken is
         string memory name_,
         string memory symbol_
     ) external initializer {
-        __ERC721_init(name_, symbol_);
+        __ERC721_init(name_,symbol_);
         __Ownable_init();
     }
 
@@ -39,20 +42,4 @@ contract MEP1002NamingToken is
     function _baseURI() internal view override returns (string memory) {
         return _baseUri;
     }
-
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        _requireMinted(tokenId);
-
-        string memory baseURI = _baseURI();
-
-        return bytes(baseURI).length > 0
-        ? string(abi.encodePacked(
-            baseURI,
-            tokenId.toString()
-        ))
-        : "";
-    }
-
-
-
 }

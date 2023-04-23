@@ -168,6 +168,19 @@ describe('MEP1002Token', function () {
       await expect(await MEP1002Token.tokenURI(1)).to.equal(`https://wannsee-test.mxc.com/1?parentTokenId=0&geolocation=${h3IndexRes7Big.toString()}&namingRightTokenId=1&name=${h3IndexRes7Big.toString()}`);
     });
 
+    it("should reset baseuri", async function() {
+      await expect(await MEP1002Token.setBaseURI("https://wannsee-test-2.mxc.com/")).to.ok;
+      await expect(await MEP1002Token.setNamingToken(MEP1002NamingToken.address, "https://wannsee-test-3.mxc.com/")).to.ok;
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
+      await expect(await MEP1002Token.tokenURI(1)).to.equal(`https://wannsee-test-2.mxc.com/1?parentTokenId=0&geolocation=${h3IndexRes7Big.toString()}&namingRightTokenId=1&name=${h3IndexRes7Big.toString()}`);
+      await expect(await MEP1002NamingToken.tokenURI(1)).to.equal(`https://wannsee-test-3.mxc.com/1`);
+    });
+
+    it("should return supply", async function() {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
+      await expect(await MEP1002Token.totalSupply()).to.equal(1);
+    });
+
 
     // it('should mint children both mint parent', async function() {
       //   await expect(await MEP1002Token.mint(h3IndexRes8Big)).to.ok;
@@ -202,6 +215,11 @@ describe('MEP1002Token', function () {
     it("should get token uri", async function() {
       await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
       await expect(await MEP1002NamingToken.tokenURI(1)).to.equal("https://wannsee-test-2.mxc.com/1");
+    });
+
+    it("should return supply", async function() {
+      await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
+      await expect(await MEP1002NamingToken.totalSupply()).to.equal(1);
     });
 
   })

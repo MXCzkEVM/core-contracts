@@ -1,10 +1,16 @@
 import { expect } from "chai";
 import { deployments, ethers, getNamedAccounts } from "hardhat";
 import { BigNumber, constants } from "ethers";
-import { MEP1002NamingToken, MEP1002Token } from "../typechain-types";
+import {
+    MEP1002NamingToken,
+    MEP1002Token,
+    NameWrapperMock,
+    NameWrapperMock__factory,
+} from "../typechain-types";
 import * as h3 from "h3-js";
 import { H3Index, isValidCell } from "h3-js";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { namehash } from "ethers/lib/utils";
 
 function bn(x: number): BigNumber {
     return BigNumber.from(x);
@@ -22,10 +28,17 @@ const setupTest = deployments.createFixture(
         const MEP1002Token = await ethers.getContract<MEP1002Token>(
             "MEP1002Token"
         );
+        const NameWrapperMockFactory =
+            await ethers.getContractFactory<NameWrapperMock__factory>(
+                "NameWrapperMock"
+            );
+        const NameWrapperMock = await NameWrapperMockFactory.deploy();
+        await MEP1002Token.setMNSToken(NameWrapperMock.address);
 
         return {
             MEP1002Token,
             MEP1002NamingToken,
+            NameWrapperMock,
         };
     }
 );
@@ -33,12 +46,14 @@ const setupTest = deployments.createFixture(
 describe("MEP1002Token", function () {
     let MEP1002Token: MEP1002Token;
     let MEP1002NamingToken: MEP1002NamingToken;
+    let NameWrapperMock: NameWrapperMock;
     let owner: SignerWithAddress;
     let tokenOwner: SignerWithAddress;
     let addrs: SignerWithAddress[];
     beforeEach(async function () {
         [owner, tokenOwner, ...addrs] = await ethers.getSigners();
-        ({ MEP1002Token, MEP1002NamingToken } = await setupTest());
+        ({ MEP1002Token, MEP1002NamingToken, NameWrapperMock } =
+            await setupTest());
     });
 
     const h3IndexRes7 = getRandomH3Index(7);
@@ -97,16 +112,6 @@ describe("MEP1002Token", function () {
             ).to.equal(1);
         });
 
-        it("should return geolocation", async function () {
-            await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
-            await expect(await MEP1002Token.geolocation(1)).to.equal(
-                h3IndexRes7Big
-            );
-            await expect(
-                await MEP1002Token.geolocationToTokenId(h3IndexRes7Big)
-            ).to.equal(1);
-        });
-
         it("cannot mint by invalid h3index", async function () {
             await expect(
                 MEP1002Token.mint(BigNumber.from(1))
@@ -156,7 +161,7 @@ describe("MEP1002Token", function () {
                 MEP1002Token.connect(owner).transferFrom(
                     owner.address,
                     tokenOwner.address,
-                    1
+                    h3IndexRes7Big
                 )
             ).to.be.revertedWithCustomError(
                 MEP1002Token,
@@ -167,7 +172,10 @@ describe("MEP1002Token", function () {
         it("cannot set name without naming Token", async function () {
             await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
             await expect(
-                MEP1002Token.connect(addrs[1]).setName(1, "test")
+                MEP1002Token.connect(addrs[1]).setName(
+                    h3IndexRes7Big,
+                    namehash("test.mxc")
+                )
             ).to.be.revertedWithCustomError(MEP1002Token, "NoNamingPermission");
         });
 
@@ -183,40 +191,37 @@ describe("MEP1002Token", function () {
 
         it("should mint token event", async function () {
             await expect(MEP1002Token.mint(h3IndexRes7Big))
-                .to.emit(MEP1002Token, "MEP1002TokenUpdateAttr")
-                .withArgs(1, h3IndexRes7Big, 1, h3IndexRes7Big.toString());
-            await expect(MEP1002Token.setName(1, "test"))
-                .to.emit(MEP1002Token, "MEP1002TokenUpdateAttr")
-                .withArgs(1, h3IndexRes7Big, 1, "test");
+                .to.emit(MEP1002Token, "MEP1002TokenUpdateName")
+                .withArgs(h3IndexRes7Big, "");
+        });
+
+        it("should set name event", async function () {
+            await MEP1002Token.mint(h3IndexRes7Big);
+            await expect(
+                MEP1002Token.setName(h3IndexRes7Big, namehash("test.mxc"))
+            )
+                .to.emit(MEP1002Token, "MEP1002TokenUpdateName")
+                .withArgs(h3IndexRes7Big, "test");
         });
 
         it("should setting name", async function () {
             await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
-            await expect((await MEP1002Token.getAttr(1))["3"]).to.equal(
-                h3IndexRes7Big.toString()
-            );
-            await expect(await MEP1002Token.setName(1, "test")).to.ok;
-            await expect((await MEP1002Token.getAttr(1))["3"]).to.equal("test");
-        });
-
-        it("should return attr", async function () {
-            await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
-            // [parentId, geolocation, namingRightTokenId, name]
-            await expect((await MEP1002Token.getAttr(1))["0"]).to.equal(0);
-            await expect((await MEP1002Token.getAttr(1))["1"]).to.equal(
-                h3IndexRes7Big
-            );
-            await expect((await MEP1002Token.getAttr(1))["2"]).to.equal(1);
-            await expect((await MEP1002Token.getAttr(1))["3"]).to.equal(
-                h3IndexRes7Big.toString()
-            );
+            await expect(
+                await MEP1002Token.tokenNames(h3IndexRes7Big)
+            ).to.equal("");
+            await expect(
+                await MEP1002Token.setName(h3IndexRes7Big, namehash("test.mxc"))
+            ).to.ok;
+            await expect(
+                await MEP1002Token.tokenNames(h3IndexRes7Big)
+            ).to.equal("test");
         });
 
         it("should get uri", async function () {
             await MEP1002Token.setBaseURI("https://wannsee-test.mxc.com/");
             await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
-            await expect(await MEP1002Token.tokenURI(1)).to.equal(
-                `https://wannsee-test.mxc.com/1?parentTokenId=0&geolocation=${h3IndexRes7Big.toString()}&namingRightTokenId=1&name=${h3IndexRes7Big.toString()}`
+            await expect(await MEP1002Token.tokenURI(h3IndexRes7Big)).to.equal(
+                `https://wannsee-test.mxc.com/${h3IndexRes7Big.toString()}?name=`
             );
         });
 
@@ -231,11 +236,13 @@ describe("MEP1002Token", function () {
                 )
             ).to.ok;
             await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
-            await expect(await MEP1002Token.tokenURI(1)).to.equal(
-                `https://wannsee-test-2.mxc.com/1?parentTokenId=0&geolocation=${h3IndexRes7Big.toString()}&namingRightTokenId=1&name=${h3IndexRes7Big.toString()}`
+            await expect(await MEP1002Token.tokenURI(h3IndexRes7Big)).to.equal(
+                `https://wannsee-test-2.mxc.com/${h3IndexRes7Big.toString()}?name=`
             );
-            await expect(await MEP1002NamingToken.tokenURI(1)).to.equal(
-                `https://wannsee-test-3.mxc.com/1`
+            await expect(
+                await MEP1002NamingToken.tokenURI(h3IndexRes7Big)
+            ).to.equal(
+                `https://wannsee-test-3.mxc.com/${h3IndexRes7Big.toString()}`
             );
         });
 
@@ -284,7 +291,7 @@ describe("MEP1002Token", function () {
                 MEP1002NamingToken.connect(addrs[1]).transferFrom(
                     addrs[1].address,
                     owner.address,
-                    1
+                    h3IndexRes7Big
                 )
             ).to.be.revertedWith(
                 "ERC721: caller is not token owner or approved"
@@ -297,8 +304,10 @@ describe("MEP1002Token", function () {
                 "https://wannsee-test-2.mxc.com/"
             );
             await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
-            await expect(await MEP1002NamingToken.tokenURI(1)).to.equal(
-                "https://wannsee-test-2.mxc.com/1"
+            await expect(
+                await MEP1002NamingToken.tokenURI(h3IndexRes7Big)
+            ).to.equal(
+                `https://wannsee-test-2.mxc.com/${h3IndexRes7Big.toString()}`
             );
         });
 

@@ -9,8 +9,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { getNamedAccounts, deployments, network, upgrades, ethers } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
-    if (!network.tags.upgrade || network.live) {
-        return true;
+    if (!network.tags.hasOwnProperty("upgrade") || network.live) {
+        return false;
     }
 
     const MEP1002NamingToken = await ethers.getContract<MEP1002NamingToken>(

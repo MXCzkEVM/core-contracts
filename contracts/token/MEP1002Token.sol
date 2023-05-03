@@ -107,13 +107,6 @@ IERC6059
     using StringsUpgradeable for uint256;
     using H3Library for uint256;
 
-    struct MEP1002Attributes {
-        uint256 parentTokenId;
-        uint256 geolocation;
-        uint256 namingRightTokenId;
-        string name;
-    }
-
     uint256 private constant _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP = 100;
 
     bytes32 private constant _MXC_NODE =
@@ -146,11 +139,7 @@ IERC6059
     //  we can strip it for size/gas savings.
     mapping(address => mapping(uint256 => uint256)) internal _childIsInActive;
 
-    // MEP1002 Token attributes;
-    mapping(uint256 => MEP1002Attributes) private _tokenAttributes;
-
-    // geolocation -> tokenId
-    mapping(uint256 => uint256) private _geolocationToTokenId;
+    mapping(uint256 => string) public tokenNames;
 
     // Token name
     string private _name;
@@ -161,17 +150,15 @@ IERC6059
     // TokenId counter
     Counters.Counter private _tokenIds;
 
-    address private _namingToken;
-
     string private _baseUri;
+
+    address private _namingToken;
 
     address private _mnsToken;
 
-    event MEP1002TokenUpdateAttr(
+    event MEP1002TokenUpdateName(
         uint256 indexed tokenId,
-        uint256 indexed geolocation,
-        uint256 indexed namingRightTokenId,
-        string name
+        string indexed name
     );
 
     function init(
@@ -199,8 +186,7 @@ IERC6059
 
     function mint(uint256 geolocation_) external {
         if (!geolocation_.isValidCell()) revert InvalidGeolocation();
-        if (_geolocationToTokenId[geolocation_] != 0)
-            revert ERC721TokenAlreadyMinted();
+        if (_exists(geolocation_)) revert ERC721TokenAlreadyMinted();
         //        bool hasParent = false;
         uint256 res = geolocation_.getResolution();
         if (res != H3Library.getMinResolution()) revert InvalidGeolocation();
@@ -212,33 +198,22 @@ IERC6059
         //            hasParent = true;
         //        }
         _tokenIds.increment();
-        uint256 tokenId = _tokenIds.current();
-        uint256 parentTokenId;
         //        if(hasParent) {
         //            parentTokenId = tokenId - 1;
         //            _nestMint(address(this), tokenId, parentTokenId, "");
         //        }else {
-        _safeMint(address(this), tokenId);
+        _safeMint(address(this), geolocation_);
         //        }
-        IMEP1002NamingToken(_namingToken).mint(_msgSender(), tokenId);
-        _tokenAttributes[tokenId] = MEP1002Attributes({
-            parentTokenId: parentTokenId,
-            geolocation: geolocation_,
-            namingRightTokenId: tokenId,
-            name: ""
-        });
-        _geolocationToTokenId[geolocation_] = tokenId;
-        emit MEP1002TokenUpdateAttr(
-            tokenId,
-            _tokenAttributes[tokenId].geolocation,
-            _tokenAttributes[tokenId].namingRightTokenId,
-            _tokenAttributes[tokenId].name
+        IMEP1002NamingToken(_namingToken).mint(_msgSender(), geolocation_);
+        emit MEP1002TokenUpdateName(
+            geolocation_,
+            tokenNames[geolocation_]
         );
     }
 
-    function setName(uint256 tokenId, uint256 nameWrapperTokenId) external {
-        _requireMinted(tokenId);
-        if (IERC721(_namingToken).ownerOf(tokenId) != _msgSender())
+    function setName(uint256 geolocation_, uint256 nameWrapperTokenId) external {
+        _requireMinted(geolocation_);
+        if (IERC721(_namingToken).ownerOf(geolocation_) != _msgSender())
             revert NoNamingPermission();
         if (INameWrapper(_mnsToken).ownerOf(nameWrapperTokenId) != _msgSender())
             revert NoNamingPermission();
@@ -248,31 +223,16 @@ IERC6059
         if (keccak256(newName) == keccak256(abi.encodePacked(""))) {
             return;
         }
-        _tokenAttributes[tokenId].name = string(abi.encodePacked(newName));
-        emit MEP1002TokenUpdateAttr(
-            tokenId,
-            _tokenAttributes[tokenId].geolocation,
-            _tokenAttributes[tokenId].namingRightTokenId,
-            _tokenAttributes[tokenId].name
+        tokenNames[geolocation_] = string(abi.encodePacked(newName));
+        emit MEP1002TokenUpdateName(
+            geolocation_,
+            tokenNames[geolocation_]
         );
     }
 
     function geolocation(uint256 tokenId) external view returns (uint256) {
         _requireMinted(tokenId);
-        return _tokenAttributes[tokenId].geolocation;
-    }
-
-    function getAttr(
-        uint256 tokenId
-    ) external view returns (MEP1002Attributes memory) {
-        _requireMinted(tokenId);
-        return _tokenAttributes[tokenId];
-    }
-
-    function geolocationToTokenId(
-        uint256 geolocation_
-    ) external view returns (uint256) {
-        return _geolocationToTokenId[geolocation_];
+        return tokenId;
     }
 
     /**
@@ -344,20 +304,12 @@ IERC6059
 
         string memory baseURI = _baseURI();
 
-        MEP1002Attributes memory attrs = _tokenAttributes[tokenId];
-
         return bytes(baseURI).length > 0 ? string(
             abi.encodePacked(
                 baseURI,
                 tokenId.toString(),
-                "?parentTokenId=",
-                attrs.parentTokenId.toString(),
-                "&geolocation=",
-                attrs.geolocation.toString(),
-                "&namingRightTokenId=",
-                attrs.namingRightTokenId.toString(),
-                "&name=",
-                attrs.name
+                "?name=",
+                tokenNames[tokenId]
             )
         ) : "";
     }

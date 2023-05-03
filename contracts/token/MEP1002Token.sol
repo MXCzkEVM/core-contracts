@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: CC0-1.0
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.18;
 
@@ -7,81 +7,83 @@ import {IERC6059} from "./IERC6059.sol";
 import {IMEP1002NamingToken} from "./IMEP1002NamingToken.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {
-    ERC721Holder
+ERC721Holder
 } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import {
-    IERC721Receiver
+IERC721Receiver
 } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {
-    IERC165Upgradeable
+IERC165Upgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 import {
-    IERC721Metadata
+IERC721Metadata
 } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import {
-    IERC721MetadataUpgradeable
+IERC721MetadataUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
 import {
-    IERC721EnumerableUpgradeable
+IERC721EnumerableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
 import {
-    IERC721Upgradeable
+IERC721Upgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {
-    IERC721ReceiverUpgradeable
+IERC721ReceiverUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 import {
-    AddressUpgradeable
+AddressUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import {
-    ContextUpgradeable
+ContextUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import {
-    StringsUpgradeable
+StringsUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import {
-    ERC165Upgradeable
+ERC165Upgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {
-    Initializable
+Initializable
 } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {
-    OwnableUpgradeable
+OwnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {INameWrapper} from "../mns/wrapper/INameWrapper.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 
 import {H3Library} from "../libs/H3Library.sol";
+import {Controllable} from "../common/Controllable.sol";
 
-error ChildAlreadyExists();
-error ChildIndexOutOfRange();
-error ERC721AddressZeroIsNotaValidOwner();
-error ERC721ApprovalToCurrentOwner();
-error ERC721ApproveCallerIsNotOwnerNorApprovedForAll();
-error ERC721ApproveToCaller();
-error ERC721InvalidTokenId();
-error ERC721MintToTheZeroAddress();
-error ERC721NotApprovedOrOwner();
-error ERC721TokenAlreadyMinted();
-error ERC721TransferFromIncorrectOwner();
-error ERC721TransferToNonReceiverImplementer();
-error ERC721TransferToTheZeroAddress();
-error IdZeroForbidden();
-error IsNotContract();
-error MaxPendingChildrenReached();
-error MaxRecursiveBurnsReached(address childContract, uint256 childId);
-error MintToNonNestableImplementer();
-error NestableTooDeep();
-error NestableTransferToDescendant();
-error NestableTransferToNonNestableImplementer();
-error NestableTransferToSelf();
-error NotApprovedOrDirectOwner();
-error PendingChildIndexOutOfRange();
-error UnexpectedChildId();
-error UnexpectedNumberOfChildren();
+    error ChildAlreadyExists();
+    error ChildIndexOutOfRange();
+    error ERC721AddressZeroIsNotaValidOwner();
+    error ERC721ApprovalToCurrentOwner();
+    error ERC721ApproveCallerIsNotOwnerNorApprovedForAll();
+    error ERC721ApproveToCaller();
+    error ERC721InvalidTokenId();
+    error ERC721MintToTheZeroAddress();
+    error ERC721NotApprovedOrOwner();
+    error ERC721TokenAlreadyMinted();
+    error ERC721TransferFromIncorrectOwner();
+    error ERC721TransferToNonReceiverImplementer();
+    error ERC721TransferToTheZeroAddress();
+    error IdZeroForbidden();
+    error IsNotContract();
+    error MaxPendingChildrenReached();
+    error MaxRecursiveBurnsReached(address childContract, uint256 childId);
+    error MintToNonNestableImplementer();
+    error NestableTooDeep();
+    error NestableTransferToDescendant();
+    error NestableTransferToNonNestableImplementer();
+    error NestableTransferToSelf();
+    error NotApprovedOrDirectOwner();
+    error PendingChildIndexOutOfRange();
+    error UnexpectedChildId();
+    error UnexpectedNumberOfChildren();
 
-error InvalidGeolocation();
-error NoNamingPermission();
+    error InvalidGeolocation();
+    error NoNamingPermission();
 
 /**
  * @title NestableToken
@@ -92,13 +94,13 @@ error NoNamingPermission();
  */
 
 contract MEP1002Token is
-    OwnableUpgradeable,
-    ERC165Upgradeable,
-    IERC721EnumerableUpgradeable,
-    IERC721MetadataUpgradeable,
-    ERC721Holder,
-    IMEP1002,
-    IERC6059
+ERC165Upgradeable,
+IERC721EnumerableUpgradeable,
+IERC721MetadataUpgradeable,
+ERC721Holder,
+Controllable,
+IMEP1002,
+IERC6059
 {
     using Counters for Counters.Counter;
     using AddressUpgradeable for address;
@@ -113,6 +115,9 @@ contract MEP1002Token is
     }
 
     uint256 private constant _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP = 100;
+
+    bytes32 private constant _MXC_NODE =
+    0xc0ae3fe48f09fde4a60d1b2e3f2c5d1f8dd5922c3ab88ca76377c5fd10816e49;
 
     // Mapping owner address to token count
     mapping(address => uint256) private _balances;
@@ -160,6 +165,8 @@ contract MEP1002Token is
 
     string private _baseUri;
 
+    address private _mnsToken;
+
     event MEP1002TokenUpdateAttr(
         uint256 indexed tokenId,
         uint256 indexed geolocation,
@@ -172,20 +179,20 @@ contract MEP1002Token is
         string memory symbol_,
         address namingTokenAddr
     ) external initializer {
-        IMEP1002NamingToken(namingTokenAddr).init(
-            "MEP1002 Naming Token",
-            "MEP1002NT"
-        );
+        __Controllable_init(_msgSender());
         __MEP1002_init(name_, symbol_);
-        __Ownable_init();
         _namingToken = namingTokenAddr;
     }
 
-    function setBaseURI(string memory baseURI_) external onlyOwner {
+    function setBaseURI(string memory baseURI_) external onlyController {
         _baseUri = baseURI_;
     }
 
-    function setNamingToken(address namingTokenAddr, string memory baseURI_) external onlyOwner {
+    function setMNSToken(address mnsToken_) external onlyController {
+        _mnsToken = mnsToken_;
+    }
+
+    function setNamingToken(address namingTokenAddr, string memory baseURI_) external onlyController {
         _namingToken = namingTokenAddr;
         IMEP1002NamingToken(namingTokenAddr).setBaseURI(baseURI_);
     }
@@ -199,7 +206,6 @@ contract MEP1002Token is
         if (res != H3Library.getMinResolution()) revert InvalidGeolocation();
         //        for (uint256 i = 0; i < res - H3Library.getMinResolution(); i++) {
         //            uint256 parentGeolocation = geolocation_.cellToParent(res - (i + 1));
-        //            console.log("parentGeolocation",parentGeolocation);
         //            if(parentGeolocation == 0) break;
         //            if(parentGeolocation == geolocation_) break;
         //            this.mint(parentGeolocation);
@@ -219,7 +225,7 @@ contract MEP1002Token is
             parentTokenId: parentTokenId,
             geolocation: geolocation_,
             namingRightTokenId: tokenId,
-            name: geolocation_.toString()
+            name: ""
         });
         _geolocationToTokenId[geolocation_] = tokenId;
         emit MEP1002TokenUpdateAttr(
@@ -230,12 +236,19 @@ contract MEP1002Token is
         );
     }
 
-    function setName(uint256 tokenId, string memory name_) external {
+    function setName(uint256 tokenId, uint256 nameWrapperTokenId) external {
         _requireMinted(tokenId);
         if (IERC721(_namingToken).ownerOf(tokenId) != _msgSender())
             revert NoNamingPermission();
+        if (INameWrapper(_mnsToken).ownerOf(nameWrapperTokenId) != _msgSender())
+            revert NoNamingPermission();
 
-        _tokenAttributes[tokenId].name = name_;
+        bytes32 node = keccak256(abi.encodePacked(_MXC_NODE, bytes32(nameWrapperTokenId)));
+        bytes memory newName = INameWrapper(_mnsToken).names(node);
+        if (keccak256(newName) == keccak256(abi.encodePacked(""))) {
+            return;
+        }
+        _tokenAttributes[tokenId].name = string(abi.encodePacked(newName));
         emit MEP1002TokenUpdateAttr(
             tokenId,
             _tokenAttributes[tokenId].geolocation,
@@ -268,17 +281,17 @@ contract MEP1002Token is
     function supportsInterface(
         bytes4 interfaceId
     )
-        public
-        view
-        virtual
-        override(ERC165Upgradeable, IERC165Upgradeable)
-        returns (bool)
+    public
+    view
+    virtual
+    override(ERC165Upgradeable, IERC165Upgradeable)
+    returns (bool)
     {
         return
-            interfaceId == type(IERC721Upgradeable).interfaceId ||
-            interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
-            interfaceId == type(IERC6059).interfaceId ||
-            super.supportsInterface(interfaceId);
+        interfaceId == type(IERC721Upgradeable).interfaceId ||
+        interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
+        interfaceId == type(IERC6059).interfaceId ||
+        super.supportsInterface(interfaceId);
     }
 
     /**
@@ -286,7 +299,7 @@ contract MEP1002Token is
      */
     function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual override returns (uint256) {
         require(index < balanceOf(owner), "ERC721Enumerable: owner index out of bounds");
-        if(owner == address(this)) {
+        if (owner == address(this)) {
             return index;
         }
         return 0;
@@ -346,7 +359,7 @@ contract MEP1002Token is
                 "&name=",
                 attrs.name
             )
-        ): "";
+        ) : "";
     }
 
     /**
@@ -533,7 +546,7 @@ contract MEP1002Token is
         address to,
         uint256 tokenId
     ) internal virtual {
-        (address immediateOwner, uint256 parentId, ) = directOwnerOf(tokenId);
+        (address immediateOwner, uint256 parentId,) = directOwnerOf(tokenId);
         if (immediateOwner != from) revert ERC721TransferFromIncorrectOwner();
         if (to == address(0)) revert ERC721TransferToTheZeroAddress();
 
@@ -568,7 +581,7 @@ contract MEP1002Token is
         uint256 destinationId,
         bytes memory data
     ) internal virtual {
-        (address immediateOwner, uint256 parentId, ) = directOwnerOf(tokenId);
+        (address immediateOwner, uint256 parentId,) = directOwnerOf(tokenId);
         if (immediateOwner != from) revert ERC721TransferFromIncorrectOwner();
         if (to == address(0)) revert ERC721TransferToTheZeroAddress();
         if (to == address(this) && tokenId == destinationId)
@@ -640,11 +653,11 @@ contract MEP1002Token is
         address targetContract,
         uint256 targetId
     ) private view {
-        for (uint256 i; i < _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP; ) {
+        for (uint256 i; i < _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP;) {
             (
-                address nextOwner,
-                uint256 nextOwnerTokenId,
-                bool isNft
+            address nextOwner,
+            uint256 nextOwnerTokenId,
+            bool isNft
             ) = IERC6059(targetContract).directOwnerOf(targetId);
             // If there's a final address, we're good. There's no loop.
             if (!isNft) {
@@ -657,9 +670,9 @@ contract MEP1002Token is
             // We reuse the parameters to save some contract size
             targetContract = nextOwner;
             targetId = nextOwnerTokenId;
-            unchecked {
-                ++i;
-            }
+        unchecked {
+            ++i;
+        }
         }
         revert NestableTooDeep();
     }
@@ -787,11 +800,11 @@ contract MEP1002Token is
     function ownerOf(
         uint256 tokenId
     )
-        public
-        view
-        virtual
-        override(IERC6059, IERC721Upgradeable)
-        returns (address)
+    public
+    view
+    virtual
+    override(IERC6059, IERC721Upgradeable)
+    returns (address)
     {
         (address owner, uint256 ownerTokenId, bool isNft) = directOwnerOf(
             tokenId
@@ -870,7 +883,7 @@ contract MEP1002Token is
         uint256 tokenId,
         uint256 maxChildrenBurns
     ) internal virtual returns (uint256) {
-        (address immediateOwner, uint256 parentId, ) = directOwnerOf(tokenId);
+        (address immediateOwner, uint256 parentId,) = directOwnerOf(tokenId);
         address owner = ownerOf(tokenId);
         _balances[immediateOwner] -= 1;
 
@@ -895,31 +908,32 @@ contract MEP1002Token is
         uint256 pendingRecursiveBurns;
         uint256 totalChildBurns;
 
-        uint256 length = children.length; //gas savings
-        for (uint256 i; i < length; ) {
+        uint256 length = children.length;
+        //gas savings
+        for (uint256 i; i < length;) {
             if (totalChildBurns >= maxChildrenBurns)
                 revert MaxRecursiveBurnsReached(
                     children[i].contractAddress,
                     children[i].tokenId
                 );
             delete _childIsInActive[children[i].contractAddress][
-                children[i].tokenId
+            children[i].tokenId
             ];
-            unchecked {
-                // At this point we know pendingRecursiveBurns must be at least 1
-                pendingRecursiveBurns = maxChildrenBurns - totalChildBurns;
-            }
+        unchecked {
+            // At this point we know pendingRecursiveBurns must be at least 1
+            pendingRecursiveBurns = maxChildrenBurns - totalChildBurns;
+        }
             // We substract one to the next level to count for the token being burned, then add it again on returns
             // This is to allow the behavior of 0 recursive burns meaning only the current token is deleted.
             totalChildBurns +=
-                IERC6059(children[i].contractAddress).burn(
-                    children[i].tokenId,
-                    pendingRecursiveBurns - 1
-                ) +
-                1;
-            unchecked {
-                ++i;
-            }
+            IERC6059(children[i].contractAddress).burn(
+                children[i].tokenId,
+                pendingRecursiveBurns - 1
+            ) +
+            1;
+        unchecked {
+            ++i;
+        }
         }
         // Can't remove before burning child since child will call back to get root owner
         delete _directOwners[tokenId];
@@ -1044,8 +1058,8 @@ contract MEP1002Token is
     ) internal view virtual returns (bool) {
         address owner = ownerOf(tokenId);
         return (spender == owner ||
-            isApprovedForAll(owner, spender) ||
-            getApproved(tokenId) == spender);
+        isApprovedForAll(owner, spender) ||
+        getApproved(tokenId) == spender);
     }
 
     /**
@@ -1059,15 +1073,15 @@ contract MEP1002Token is
         address spender,
         uint256 tokenId
     ) internal view virtual returns (bool) {
-        (address owner, uint256 parentId, ) = directOwnerOf(tokenId);
+        (address owner, uint256 parentId,) = directOwnerOf(tokenId);
         // When the parent is an NFT, only it can do operations
         if (parentId != 0) {
             return (spender == owner);
         }
         // Otherwise, the owner or approved address can
         return (spender == owner ||
-            isApprovedForAll(owner, spender) ||
-            getApproved(tokenId) == spender);
+        isApprovedForAll(owner, spender) ||
+        getApproved(tokenId) == spender);
     }
 
     /**
@@ -1109,12 +1123,12 @@ contract MEP1002Token is
     ) private returns (bool) {
         if (to.isContract()) {
             try
-                IERC721Receiver(to).onERC721Received(
-                    _msgSender(),
-                    from,
-                    tokenId,
-                    data
-                )
+            IERC721Receiver(to).onERC721Received(
+                _msgSender(),
+                from,
+                tokenId,
+                data
+            )
             returns (bytes4 retval) {
                 return retval == IERC721Receiver.onERC721Received.selector;
             } catch (bytes memory reason) {
@@ -1236,7 +1250,8 @@ contract MEP1002Token is
 
         // Add to active:
         _activeChildren[parentId].push(child);
-        _childIsInActive[childAddress][childId] = 1; // We use 1 as true
+        _childIsInActive[childAddress][childId] = 1;
+        // We use 1 as true
 
         emit ChildAccepted(parentId, childIndex, childAddress, childId);
 
@@ -1754,4 +1769,8 @@ contract MEP1002Token is
         array[index] = array[array.length - 1];
         array.pop();
     }
+
+
+    uint256[33] private __gap;
+
 }

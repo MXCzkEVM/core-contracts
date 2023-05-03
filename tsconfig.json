@@ -7,6 +7,12 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["./scripts", "./test", "./typechain", "./tasks"],
+  "include": [
+    "./scripts/**/*.ts",
+    "./test/**/*.ts",
+    "./deploy/**/*.ts",
+    "./typings-custom/**/*.ts",
+    "./tasks/**/*.ts"
+  ],
   "files": ["./hardhat.config.ts"]
 }

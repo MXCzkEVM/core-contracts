@@ -221,6 +221,23 @@ describe("MEP1002Token", function () {
             ).to.equal("test.mxc");
         });
 
+        it("should reset name", async function () {
+            await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
+            await expect(
+                await MEP1002Token.tokenNames(h3IndexRes7Big)
+            ).to.equal("");
+            await expect(
+                await MEP1002Token.setName(h3IndexRes7Big, testDotMXCTokenId)
+            ).to.ok;
+            await expect(
+                await MEP1002Token.tokenNames(h3IndexRes7Big)
+            ).to.equal("test.mxc");
+            await expect(await MEP1002Token.resetName(h3IndexRes7Big)).to.ok;
+            await expect(
+                await MEP1002Token.tokenNames(h3IndexRes7Big)
+            ).to.equal("");
+        });
+
         it("should get uri", async function () {
             await MEP1002Token.setBaseURI("https://wannsee-test.mxc.com/");
             await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;

@@ -229,6 +229,17 @@ IERC6059
         );
     }
 
+    function resetName(uint256 geolocation_) external {
+        _requireMinted(geolocation_);
+        if (IERC721(_namingToken).ownerOf(geolocation_) != _msgSender())
+            revert NoNamingPermission();
+        tokenNames[geolocation_] = "";
+        emit MEP1002TokenUpdateName(
+            geolocation_,
+            tokenNames[geolocation_]
+        );
+    }
+
     function geolocation(uint256 tokenId) external view returns (uint256) {
         _requireMinted(tokenId);
         return tokenId;

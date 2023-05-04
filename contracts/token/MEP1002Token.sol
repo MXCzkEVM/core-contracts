@@ -218,8 +218,7 @@ IERC6059
         if (INameWrapper(_mnsToken).ownerOf(nameWrapperTokenId) != _msgSender())
             revert NoNamingPermission();
 
-        bytes32 node = keccak256(abi.encodePacked(_MXC_NODE, bytes32(nameWrapperTokenId)));
-        bytes memory newName = INameWrapper(_mnsToken).names(node);
+        bytes memory newName = INameWrapper(_mnsToken).names(bytes32(nameWrapperTokenId));
         if (keccak256(newName) == keccak256(abi.encodePacked(""))) {
             return;
         }

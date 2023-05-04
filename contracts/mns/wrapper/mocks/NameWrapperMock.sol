@@ -10,15 +10,17 @@ contract NameWrapperMock {
 
     mapping(bytes32 => bytes) public names;
 
+    address _owner;
+
     constructor() {
         // test.mxc
         bytes32 node = keccak256(abi.encodePacked(_MXC_NODE, keccak256(bytes("test"))));
-
-        names[node] = abi.encodePacked("test.mxc");
+        names[node] = bytes("test.mxc");
+        _owner = msg.sender;
     }
 
     function ownerOf(uint256 id) external view returns (address owner) {
-        return msg.sender;
+        return _owner;
     }
 
 }

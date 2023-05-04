@@ -86,6 +86,11 @@ describe("MEP1002Token", function () {
     const h3IndexRes7Big = BigNumber.from(`0x${h3IndexRes7}`);
     const h3IndexRes8Big = BigNumber.from(`0x${h3IndexRes8}`);
     const h3IndexRes8ParentBig = BigNumber.from(`0x${h3IndexRes8Parent}`);
+
+    // test.mxc name wrapper tokenid
+    const testDotMXCTokenId = BigNumber.from(
+        "68949889097187516169332801510365581835791041465326974816460712402969489861206"
+    );
     describe("Init", async function () {
         it("cannot init again", async function () {
             await expect(
@@ -174,7 +179,7 @@ describe("MEP1002Token", function () {
             await expect(
                 MEP1002Token.connect(addrs[1]).setName(
                     h3IndexRes7Big,
-                    namehash("test.mxc")
+                    BigNumber.from(namehash("test"))
                 )
             ).to.be.revertedWithCustomError(MEP1002Token, "NoNamingPermission");
         });
@@ -198,23 +203,22 @@ describe("MEP1002Token", function () {
         it("should set name event", async function () {
             await MEP1002Token.mint(h3IndexRes7Big);
             await expect(
-                MEP1002Token.setName(h3IndexRes7Big, namehash("test.mxc"))
+                MEP1002Token.setName(h3IndexRes7Big, testDotMXCTokenId)
             )
                 .to.emit(MEP1002Token, "MEP1002TokenUpdateName")
-                .withArgs(h3IndexRes7Big, "test");
+                .withArgs(h3IndexRes7Big, "test.mxc");
         });
-
         it("should setting name", async function () {
             await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
             await expect(
                 await MEP1002Token.tokenNames(h3IndexRes7Big)
             ).to.equal("");
             await expect(
-                await MEP1002Token.setName(h3IndexRes7Big, namehash("test.mxc"))
+                await MEP1002Token.setName(h3IndexRes7Big, testDotMXCTokenId)
             ).to.ok;
             await expect(
                 await MEP1002Token.tokenNames(h3IndexRes7Big)
-            ).to.equal("test");
+            ).to.equal("test.mxc");
         });
 
         it("should get uri", async function () {

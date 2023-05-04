@@ -3,6 +3,8 @@ import { deployments, ethers, getNamedAccounts } from "hardhat";
 import { BigNumber, constants } from "ethers";
 import {
     MEP1002NamingToken,
+    MEP1002NamingTokenMock,
+    MEP1002NamingTokenMock__factory,
     MEP1002Token,
     NameWrapperMock,
     NameWrapperMock__factory,
@@ -11,6 +13,7 @@ import * as h3 from "h3-js";
 import { H3Index, isValidCell } from "h3-js";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { namehash } from "ethers/lib/utils";
+import { getAddress } from "@ethersproject/address";
 
 function bn(x: number): BigNumber {
     return BigNumber.from(x);
@@ -46,6 +49,8 @@ const setupTest = deployments.createFixture(
 describe("MEP1002Token", function () {
     let MEP1002Token: MEP1002Token;
     let MEP1002NamingToken: MEP1002NamingToken;
+    let MEP1002NamingTokenMock: MEP1002NamingTokenMock;
+    let MEP1002NamingTokenMockFactory: MEP1002NamingTokenMock__factory;
     let NameWrapperMock: NameWrapperMock;
     let owner: SignerWithAddress;
     let tokenOwner: SignerWithAddress;
@@ -54,6 +59,10 @@ describe("MEP1002Token", function () {
         [owner, tokenOwner, ...addrs] = await ethers.getSigners();
         ({ MEP1002Token, MEP1002NamingToken, NameWrapperMock } =
             await setupTest());
+        MEP1002NamingTokenMockFactory =
+            await ethers.getContractFactory<MEP1002NamingTokenMock__factory>(
+                "MEP1002NamingTokenMock"
+            );
     });
 
     const h3IndexRes7 = getRandomH3Index(7);
@@ -94,10 +103,11 @@ describe("MEP1002Token", function () {
     describe("Init", async function () {
         it("cannot init again", async function () {
             await expect(
-                MEP1002Token.init(
+                MEP1002Token.initialize(
                     "MEP1002Token",
                     "MEP1002",
-                    MEP1002NamingToken.address
+                    MEP1002NamingToken.address,
+                    owner.address
                 )
             ).to.be.revertedWith(
                 "Initializable: contract is already initialized"
@@ -338,19 +348,80 @@ describe("MEP1002Token", function () {
         });
     });
 
-    describe("Upgrade", async function () {
-        const oldMEP1002NamingToken = MEP1002NamingToken;
-        const oldMEP1002Token = MEP1002Token;
-        const { deploy } = deployments;
-        const { deployer } = await getNamedAccounts();
-    });
-    describe("Interface support", async function () {
-        it("can support IERC165", async function () {
-            expect(await MEP1002Token.supportsInterface("0x01ffc9a7")).to.equal(
-                true
+    describe("Contract Upgrade", async function () {
+        it("should revert without upgrade", async function () {
+            MEP1002NamingTokenMock = await MEP1002NamingTokenMockFactory.attach(
+                MEP1002NamingToken.address
             );
+            await expect(
+                MEP1002NamingTokenMock.additionalFunction()
+            ).to.be.revertedWithoutReason();
         });
 
+        it("should update after upgrade", async function () {
+            await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
+            await expect(await MEP1002NamingTokenMock.totalSupply()).to.equal(
+                1
+            );
+            await expect(await MEP1002NamingTokenMock.name()).to.equal(
+                "MEP1002NamingToken"
+            );
+
+            const newImple = await MEP1002NamingTokenMockFactory.deploy();
+            const ownerStorage = await ethers.provider.getStorageAt(
+                MEP1002NamingToken.address,
+                "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+            );
+
+            await expect(await MEP1002NamingToken.upgradeTo(newImple.address))
+                .to.be.ok;
+            const currentOwner = getAddress(`0x${ownerStorage.substr(-40)}`);
+            await expect(currentOwner).to.equal(owner.address);
+            await expect(await MEP1002NamingTokenMock.totalSupply()).to.equal(
+                1
+            );
+            await expect(await MEP1002NamingTokenMock.name()).to.equal(
+                "MEP1002NamingToken V2"
+            );
+            await expect(
+                await MEP1002NamingTokenMock.additionalFunction()
+            ).to.equal(1);
+        });
+
+        it("should right admin slot after transferOwnership", async function () {
+            const newImple = await MEP1002NamingTokenMockFactory.deploy();
+
+            await expect(await MEP1002NamingToken.upgradeTo(newImple.address))
+                .to.be.ok;
+            await MEP1002NamingToken.transferOwnership(addrs[1].address);
+            const ownerStorage = await ethers.provider.getStorageAt(
+                MEP1002NamingToken.address,
+                "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+            );
+            const currentOwner = getAddress(`0x${ownerStorage.substr(-40)}`);
+            await expect(currentOwner).to.equal(addrs[1].address);
+        });
+
+        it("should revert upgrade after transferOwnership", async function () {
+            await MEP1002NamingToken.transferOwnership(addrs[1].address);
+            const newImple2 = await MEP1002NamingTokenMockFactory.deploy();
+            await expect(
+                MEP1002NamingToken.upgradeTo(newImple2.address)
+            ).to.be.revertedWith("Ownable: caller is not the owner");
+        });
+
+        it("should upgrade after transferOwnership", async function () {
+            await MEP1002NamingToken.transferOwnership(addrs[1].address);
+            const newImple2 = await MEP1002NamingTokenMockFactory.deploy();
+            await expect(
+                await MEP1002NamingToken.connect(addrs[1]).upgradeTo(
+                    newImple2.address
+                )
+            ).to.be.ok;
+        });
+    });
+
+    describe("Interface support", async function () {
         it("can support IERC721", async function () {
             expect(await MEP1002Token.supportsInterface("0x80ac58cd")).to.equal(
                 true

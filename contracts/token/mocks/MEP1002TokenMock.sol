@@ -6,5 +6,4 @@ import {MEP1002Token} from "../MEP1002Token.sol";
 
 //Minimal public implementation of IRMRKNestable for testing.
 contract MEP1002TokenMock is MEP1002Token {
-
 }

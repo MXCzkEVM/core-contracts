@@ -44,16 +44,15 @@ import {
 ERC165Upgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {
-Initializable
-} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {
-OwnableUpgradeable
-} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+UUPSUpgradeable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ControllableUpgradeable} from "../common/ControllableUpgradeable.sol";
 import {INameWrapper} from "../mns/wrapper/INameWrapper.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+import {Proxied} from "hardhat-deploy/solc_0.8/proxy/Proxied.sol";
 
 import {H3Library} from "../libs/H3Library.sol";
-import {Controllable} from "../common/Controllable.sol";
+//import {Controllable} from "../common/Controllable.sol";
 
     error ChildAlreadyExists();
     error ChildIndexOutOfRange();
@@ -94,13 +93,14 @@ import {Controllable} from "../common/Controllable.sol";
  */
 
 contract MEP1002Token is
-ERC165Upgradeable,
+IMEP1002,
+IERC6059,
 IERC721EnumerableUpgradeable,
 IERC721MetadataUpgradeable,
 ERC721Holder,
-Controllable,
-IMEP1002,
-IERC6059
+ControllableUpgradeable,
+Proxied,
+UUPSUpgradeable
 {
     using Counters for Counters.Counter;
     using AddressUpgradeable for address;
@@ -161,12 +161,17 @@ IERC6059
         string indexed name
     );
 
-    function init(
+    function initialize(
         string memory name_,
         string memory symbol_,
-        address namingTokenAddr
-    ) external initializer {
-        __Controllable_init(_msgSender());
+        address namingTokenAddr,
+        address _admin
+    ) external proxied initializer {
+        __Controllable_init(_admin);
+        assembly {
+            sstore(0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103, _admin)
+        }
+        __UUPSUpgradeable_init();
         __MEP1002_init(name_, symbol_);
         _namingToken = namingTokenAddr;
     }
@@ -245,6 +250,8 @@ IERC6059
         return tokenId;
     }
 
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+
     /**
      * @dev See {IERC165-supportsInterface}.
      */
@@ -254,14 +261,13 @@ IERC6059
     public
     view
     virtual
-    override(ERC165Upgradeable, IERC165Upgradeable)
+    override(IERC165Upgradeable)
     returns (bool)
     {
         return
         interfaceId == type(IERC721Upgradeable).interfaceId ||
         interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
-        interfaceId == type(IERC6059).interfaceId ||
-        super.supportsInterface(interfaceId);
+        interfaceId == type(IERC6059).interfaceId;
     }
 
     /**
@@ -1733,6 +1739,6 @@ IERC6059
     }
 
 
-    uint256[33] private __gap;
+    uint256[34] private __gap;
 
 }

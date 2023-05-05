@@ -59,6 +59,7 @@ const config: HardhatUserConfig = {
             allowUnlimitedContractSize: true,
         },
         mxc_testnet: {
+            saveDeployments: true,
             chainId: 5167003,
             accounts: real_accounts,
             url: process.env.MXC_TESTNET_URL || "",

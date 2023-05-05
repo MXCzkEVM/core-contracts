@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { MEP1002NamingToken } from "../../typechain-types";
+import { MEP1002NamingToken, MEP1002Token } from "../../typechain-types";
 import { getAddress } from "@ethersproject/address";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -33,8 +33,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: [],
         log: true,
     });
-
-    await MEP1002NamingToken.setController(tx.address, true);
+    const MEP1002Token = await ethers.getContract<MEP1002Token>("MEP1002Token");
+    await MEP1002NamingToken.setController(MEP1002Token.address, true);
+    await MEP1002Token.setMNSToken(
+        "0x61C48101ccE16653573e80c64b4bD4a4C3111Ce8"
+    );
     const ownerStorage = await ethers.provider.getStorageAt(
         tx.address,
         "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"

@@ -37,6 +37,11 @@
   dependencies:
     regenerator-runtime "^0.13.11"
 
+"@cartesi/hardhat-verify-deployments@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@cartesi/hardhat-verify-deployments/-/hardhat-verify-deployments-0.2.0.tgz#e0569c5a1d94e432c8567e2c468f1d634ee70b18"
+  integrity sha512-N8TPnB/nMjIRMgfVetVMUrCNzStf99jL3KHQCFZZHUzXbL/d0ataNkxudA1QZI0jio1OECWncoqSEsqDZvyChA==
+
 "@chainsafe/as-sha256@^0.3.1":
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/@chainsafe/as-sha256/-/as-sha256-0.3.1.tgz#3639df0e1435cab03f4d9870cc3ac079e57a6fc9"
@@ -826,7 +831,7 @@
   resolved "https://registry.yarnpkg.com/hardhat-deploy-ethers/-/hardhat-deploy-ethers-0.3.0-beta.13.tgz#b96086ff768ddf69928984d5eb0a8d78cfca9366"
   integrity sha512-PdWVcKB9coqWV1L7JTpfXRCI91Cgwsm7KLmBcwZ8f0COSm1xtABHZTyz3fvF6p42cTnz1VM0QnfDvMFlIRkSNw==
 
-"@nomiclabs/hardhat-etherscan@^3.0.0":
+"@nomiclabs/hardhat-etherscan@^3.1.7":
   version "3.1.7"
   resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-etherscan/-/hardhat-etherscan-3.1.7.tgz#72e3d5bd5d0ceb695e097a7f6f5ff6fcbf062b9a"
   integrity sha512-tZ3TvSgpvsQ6B6OGmo1/Au6u8BrAkvs1mIC/eURA3xgIfznUZBhmpne8hv7BXUzw9xNL3fXdpOYgOQlVMTcoHQ==

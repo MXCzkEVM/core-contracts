@@ -1,9 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
-import {
-    EVM_VERSION,
-    SOLIDITY_VERSION,
-} from "@ericxstone/hardhat-blockscout-verify";
 import "@nomicfoundation/hardhat-toolbox";
+import "@cartesi/hardhat-verify-deployments";
+
 import "@openzeppelin/hardhat-upgrades";
 import "@typechain/hardhat";
 import "@nomiclabs/hardhat-solhint";
@@ -73,16 +71,20 @@ const config: HardhatUserConfig = {
             default: 0,
         },
     },
-    blockscoutVerify: {
-        blockscoutURL: "https://wannsee-explorer-v1.mxc.com",
-        contracts: {
-            Storage: {
-                compilerVersion: SOLIDITY_VERSION.SOLIDITY_V_8_18, // checkout enum SOLIDITY_VERSION
-                optimization: true,
-                evmVersion: EVM_VERSION.EVM_LONDON, // checkout enum SOLIDITY_VERSION
-                optimizationRuns: 200,
-            },
+    etherscan: {
+        apiKey: {
+            mxc_testnet: "testr",
         },
+        customChains: [
+            {
+                network: "mxc_testnet",
+                chainId: 5167003,
+                urls: {
+                    apiURL: "http://51.222.254.9/api",
+                    browserURL: "http://51.222.254.9/",
+                },
+            },
+        ],
     },
 };
 

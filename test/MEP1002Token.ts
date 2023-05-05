@@ -6,6 +6,8 @@ import {
     MEP1002NamingTokenMock,
     MEP1002NamingTokenMock__factory,
     MEP1002Token,
+    MEP1002TokenMock,
+    MEP1002TokenMock__factory,
     NameWrapperMock,
     NameWrapperMock__factory,
 } from "../typechain-types";
@@ -49,8 +51,10 @@ const setupTest = deployments.createFixture(
 describe("MEP1002Token", function () {
     let MEP1002Token: MEP1002Token;
     let MEP1002NamingToken: MEP1002NamingToken;
+    let MEP1002TokenMock: MEP1002TokenMock;
     let MEP1002NamingTokenMock: MEP1002NamingTokenMock;
     let MEP1002NamingTokenMockFactory: MEP1002NamingTokenMock__factory;
+    let MEP1002TokenMockFactory: MEP1002TokenMock__factory;
     let NameWrapperMock: NameWrapperMock;
     let owner: SignerWithAddress;
     let tokenOwner: SignerWithAddress;
@@ -62,6 +66,10 @@ describe("MEP1002Token", function () {
         MEP1002NamingTokenMockFactory =
             await ethers.getContractFactory<MEP1002NamingTokenMock__factory>(
                 "MEP1002NamingTokenMock"
+            );
+        MEP1002TokenMockFactory =
+            await ethers.getContractFactory<MEP1002TokenMock__factory>(
+                "MEP1002TokenMock"
             );
     });
 
@@ -101,11 +109,23 @@ describe("MEP1002Token", function () {
         "68949889097187516169332801510365581835791041465326974816460712402969489861206"
     );
     describe("Init", async function () {
-        it("cannot init again", async function () {
+        it("cannot init again MEP1002Token", async function () {
             await expect(
                 MEP1002Token.initialize(
                     "MEP1002Token",
                     "MEP1002",
+                    MEP1002Token.address,
+                    owner.address
+                )
+            ).to.be.revertedWith(
+                "Initializable: contract is already initialized"
+            );
+        });
+        it("cannot init again MEP1002NamingToken", async function () {
+            await expect(
+                MEP1002Token.initialize(
+                    "MEP1002NamingToken",
+                    "MEP1002NT",
                     MEP1002NamingToken.address,
                     owner.address
                 )
@@ -348,7 +368,76 @@ describe("MEP1002Token", function () {
         });
     });
 
-    describe("Contract Upgrade", async function () {
+    describe("Contract Upgrade MEP1002Token", async function () {
+        it("should revert without upgrade", async function () {
+            MEP1002TokenMock = await MEP1002TokenMockFactory.attach(
+                MEP1002Token.address
+            );
+            await expect(
+                MEP1002TokenMock.additionalFunction()
+            ).to.be.revertedWithoutReason();
+        });
+
+        it("should update after upgrade", async function () {
+            await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
+            await expect(await MEP1002TokenMock.totalSupply()).to.equal(1);
+            await expect(await MEP1002TokenMock.name()).to.equal(
+                "MEP1002Token"
+            );
+
+            const newImple = await MEP1002TokenMockFactory.deploy();
+            const ownerStorage = await ethers.provider.getStorageAt(
+                MEP1002Token.address,
+                "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+            );
+
+            await expect(await MEP1002Token.upgradeTo(newImple.address)).to.be
+                .ok;
+            const currentOwner = getAddress(`0x${ownerStorage.substr(-40)}`);
+            await expect(currentOwner).to.equal(owner.address);
+            await expect(await MEP1002TokenMock.totalSupply()).to.equal(1);
+            await expect(await MEP1002TokenMock.name()).to.equal(
+                "MEP1002Token V2"
+            );
+            await expect(await MEP1002TokenMock.additionalFunction()).to.equal(
+                1
+            );
+        });
+
+        it("should right admin slot after transferOwnership", async function () {
+            const newImple = await MEP1002NamingTokenMockFactory.deploy();
+
+            await expect(await MEP1002NamingToken.upgradeTo(newImple.address))
+                .to.be.ok;
+            await MEP1002NamingToken.transferOwnership(addrs[1].address);
+            const ownerStorage = await ethers.provider.getStorageAt(
+                MEP1002NamingToken.address,
+                "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+            );
+            const currentOwner = getAddress(`0x${ownerStorage.substr(-40)}`);
+            await expect(currentOwner).to.equal(addrs[1].address);
+        });
+
+        it("should revert upgrade after transferOwnership", async function () {
+            await MEP1002NamingToken.transferOwnership(addrs[1].address);
+            const newImple2 = await MEP1002NamingTokenMockFactory.deploy();
+            await expect(
+                MEP1002NamingToken.upgradeTo(newImple2.address)
+            ).to.be.revertedWith("Ownable: caller is not the owner");
+        });
+
+        it("should upgrade after transferOwnership", async function () {
+            await MEP1002NamingToken.transferOwnership(addrs[1].address);
+            const newImple2 = await MEP1002NamingTokenMockFactory.deploy();
+            await expect(
+                await MEP1002NamingToken.connect(addrs[1]).upgradeTo(
+                    newImple2.address
+                )
+            ).to.be.ok;
+        });
+    });
+
+    describe("Contract Upgrade MEP1002NamingToken", async function () {
         it("should revert without upgrade", async function () {
             MEP1002NamingTokenMock = await MEP1002NamingTokenMockFactory.attach(
                 MEP1002NamingToken.address

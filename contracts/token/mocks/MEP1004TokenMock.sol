@@ -2,15 +2,15 @@
 
 pragma solidity ^0.8.18;
 
-import {MEP1002Token} from "../MEP1002Token.sol";
+import {MEP1004Token} from "../MEP1004Token.sol";
 
 //Minimal public implementation of IRMRKNestable for testing.
-contract MEP1002TokenMock is MEP1002Token {
+contract MEP1004TokenMock is MEP1004Token {
     function additionalFunction() external view onlyController returns (uint256) {
         return totalSupply();
     }
 
     function name() public pure override returns (string memory) {
-        return "MEP1002Token V2";
+        return "MEP1004Token V2";
     }
 }

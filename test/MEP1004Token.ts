@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { deployments, ethers, getNamedAccounts } from "hardhat";
 import { BigNumber, constants } from "ethers";
 import {
+    MEP1002Token,
     MEP1004Token,
     MEP1004TokenMock,
     MEP1004TokenMock__factory,
@@ -32,8 +33,12 @@ const setupTest = deployments.createFixture(
             );
         const NameWrapperMock = await NameWrapperMockFactory.deploy();
         await MEP1004Token.setMNSToken(NameWrapperMock.address);
-
+        const MEP1002Token = await ethers.getContract<MEP1002Token>(
+            "MEP1002Token"
+        );
+        await MEP1004Token.setMEP1002Addr(MEP1002Token.address);
         return {
+            MEP1002Token,
             MEP1004Token,
             NameWrapperMock,
         };
@@ -45,12 +50,13 @@ describe("MEP1004Token", function () {
     let NameWrapperMock: NameWrapperMock;
     let MEP1004TokenMock: MEP1004TokenMock;
     let MEP1004TokenMockFactory: MEP1004TokenMock__factory;
+    let MEP1002Token: MEP1002Token;
     let owner: SignerWithAddress;
     let tokenOwner: SignerWithAddress;
     let addrs: SignerWithAddress[];
     beforeEach(async function () {
         [owner, tokenOwner, ...addrs] = await ethers.getSigners();
-        ({ MEP1004Token, NameWrapperMock } = await setupTest());
+        ({ MEP1004Token, NameWrapperMock, MEP1002Token } = await setupTest());
         MEP1004TokenMockFactory =
             await ethers.getContractFactory<MEP1004TokenMock__factory>(
                 "MEP1004TokenMock"
@@ -65,7 +71,7 @@ describe("MEP1004Token", function () {
     const testSNCodeTokenId = BigNumber.from(
         `${ethers.utils.keccak256(ethers.utils.toUtf8Bytes(testSNCode))}`
     );
-
+    const testMEP1002TokenId = BigNumber.from("611831265154301951");
     describe("Init", async function () {
         it("cannot init again", async function () {
             await expect(
@@ -81,9 +87,18 @@ describe("MEP1004Token", function () {
     });
 
     describe("Minting", async function () {
-        it("should mint", async function () {
+        it("should allow admin to mint", async function () {
             await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
                 .ok;
+        });
+
+        it("should not allow non-admin account to mint tokens", async () => {
+            await expect(
+                MEP1004Token.connect(addrs[1]).mint(
+                    addrs[1].address,
+                    testSNCode
+                )
+            ).to.be.revertedWith("Controllable: Caller is not a controller");
         });
 
         it("cannot mint by invalid sncode", async function () {
@@ -128,7 +143,12 @@ describe("MEP1004Token", function () {
             )
                 .to.emit(MEP1004Token, "MEP1004TokenUpdateName")
                 .withArgs(testSNCodeTokenId, "test.mxc");
+
+            await expect(MEP1004Token.resetName(testSNCodeTokenId))
+                .to.emit(MEP1004Token, "MEP1004TokenUpdateName")
+                .withArgs(testSNCodeTokenId, "");
         });
+
         it("should setting name", async function () {
             await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
                 .ok;
@@ -176,6 +196,278 @@ describe("MEP1004Token", function () {
             await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
                 .ok;
             await expect(await MEP1004Token.totalSupply()).to.equal(1);
+        });
+    });
+
+    describe("MEP1002Slots", async function () {
+        it("should allow owner to insert the MEP1004 token to the specified slot of the MEP1002 token", async function () {
+            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1002Token.mint(testMEP1002TokenId);
+            await expect(
+                MEP1004Token.insertToMEP1002Slot(
+                    testSNCodeTokenId,
+                    testMEP1002TokenId,
+                    123
+                )
+            ).to.be.revertedWithCustomError(MEP1004Token, "ExceedSlotLimit");
+            await expect(
+                MEP1004Token.insertToMEP1002Slot(
+                    testSNCodeTokenId,
+                    testMEP1002TokenId,
+                    0
+                )
+            ).to.emit(MEP1004Token, "InsertToMEP1002Slot");
+        });
+
+        it("should allow owner to remove the MEP1004 token from the specified slot of the MEP1002 token ", async function () {
+            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1002Token.mint(testMEP1002TokenId);
+
+            await MEP1004Token.insertToMEP1002Slot(
+                testSNCodeTokenId,
+                testMEP1002TokenId,
+                0
+            );
+            await expect(
+                await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
+            ).to.ok;
+            await expect(
+                MEP1004Token.removeFromMEP1002Slot(
+                    testSNCodeTokenId,
+                    testMEP1002TokenId,
+                    0,
+                    {
+                        value: ethers.utils.parseEther("50"),
+                    }
+                )
+            ).to.emit(MEP1004Token, "RemoveFromMEP1002Slot");
+        });
+
+        it("should return correct where slot", async function () {
+            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1002Token.mint(testMEP1002TokenId);
+
+            await MEP1004Token.insertToMEP1002Slot(
+                testSNCodeTokenId,
+                testMEP1002TokenId,
+                0
+            );
+            await expect(
+                await MEP1004Token.whereSlot(testSNCodeTokenId)
+            ).to.deep.equals([testMEP1002TokenId, 0]);
+        });
+
+        it("should allow owner to set the exit fee", async function () {
+            await expect(
+                await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
+            ).to.ok;
+        });
+
+        it("should return correct exit fee", async function () {
+            await expect(
+                await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
+            ).to.ok;
+            await expect(await MEP1004Token.getExitFee()).to.be.equal(
+                ethers.utils.parseEther("50")
+            );
+        });
+
+        it("should allow owner to withdraw the exit fee", async function () {
+            await MEP1002Token.mint(testMEP1002TokenId);
+
+            await expect(
+                await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
+            ).to.ok;
+            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.insertToMEP1002Slot(
+                testSNCodeTokenId,
+                testMEP1002TokenId,
+                0
+            );
+            await expect(
+                MEP1004Token.removeFromMEP1002Slot(
+                    testSNCodeTokenId,
+                    testMEP1002TokenId,
+                    0,
+                    {
+                        value: ethers.utils.parseEther("50"),
+                    }
+                )
+            ).to.emit(MEP1004Token, "RemoveFromMEP1002Slot");
+            await expect(await MEP1004Token.getBalance()).to.be.equal(
+                ethers.utils.parseEther("50")
+            );
+            await expect(MEP1004Token.withdrawal()).to.be.ok;
+            await expect(await MEP1004Token.getBalance()).to.be.equal(0);
+        });
+
+        it("should not allow non-owner to withdraw the exit fee", async function () {
+            await expect(MEP1004Token.connect(addrs[1]).withdrawal()).to.be
+                .reverted;
+        });
+
+        it("should allow controller remove slot without pay", async function () {
+            await MEP1002Token.mint(testMEP1002TokenId);
+
+            await expect(
+                await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
+            ).to.ok;
+            await MEP1004Token.mint(owner.address, testSNCode);
+
+            await MEP1004Token.insertToMEP1002Slot(
+                testSNCodeTokenId,
+                testMEP1002TokenId,
+                0
+            );
+
+            await expect(
+                MEP1004Token.removeFromMEP1002SlotAdmin(
+                    testSNCodeTokenId,
+                    testMEP1002TokenId,
+                    0
+                )
+            ).to.emit(MEP1004Token, "RemoveFromMEP1002Slot");
+
+            await expect(
+                await MEP1004Token.getStatus(testSNCodeTokenId)
+            ).to.equals(1);
+
+            await expect(
+                MEP1004Token.insertToMEP1002Slot(
+                    testSNCodeTokenId,
+                    testMEP1002TokenId,
+                    0
+                )
+            ).to.be.reverted;
+
+            await expect(
+                MEP1004Token.payExitFee(testSNCodeTokenId, {
+                    value: ethers.utils.parseEther("50"),
+                })
+            ).to.be.ok;
+
+            await expect(
+                await MEP1004Token.getStatus(testSNCodeTokenId)
+            ).to.equals(0);
+        });
+    });
+
+    describe("LocationProofs", async function () {
+        it("should allow owner to set the location proof", async function () {
+            await MEP1002Token.mint(testMEP1002TokenId);
+            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.mint(addrs[1].address, "testcode1");
+            const testCodeTokenId1 = BigNumber.from(
+                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode1"))
+            );
+            await MEP1004Token.mint(addrs[1].address, "testcode2");
+            const testCodeTokenId2 = BigNumber.from(
+                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode2"))
+            );
+            const now = Math.floor(Date.now() / 1000) + 100;
+            await ethers.provider.send("evm_setNextBlockTimestamp", [now]);
+            const tx = await MEP1004Token.LocationProofs(
+                testMEP1002TokenId,
+                [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                "test item"
+            );
+            await expect(tx).to.ok;
+            const receipt = await tx.wait();
+            const event = receipt.events?.at(0);
+            await expect(event?.event).to.equals("NewLocationProof");
+        });
+        it("should return latest Location Proof", async function () {
+            await MEP1002Token.mint(testMEP1002TokenId);
+            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.mint(addrs[1].address, "testcode1");
+            const testCodeTokenId1 = BigNumber.from(
+                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode1"))
+            );
+            await MEP1004Token.mint(addrs[1].address, "testcode2");
+            const testCodeTokenId2 = BigNumber.from(
+                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode2"))
+            );
+            const now = Math.floor(Date.now() / 1000) + 100;
+            await ethers.provider.send("evm_setNextBlockTimestamp", [now]);
+            const tx = await MEP1004Token.LocationProofs(
+                testMEP1002TokenId,
+                [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                "test item"
+            );
+            await expect(tx).to.ok;
+
+            await expect(
+                await MEP1004Token.latestLocationProofs("test item")
+            ).to.deep.equals([
+                testMEP1002TokenId,
+                [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                "test item",
+                now,
+            ]);
+        });
+
+        it("should return correct proofs", async function () {
+            await MEP1002Token.mint(testMEP1002TokenId);
+            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.mint(addrs[1].address, "testcode1");
+            const testCodeTokenId1 = BigNumber.from(
+                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode1"))
+            );
+            await MEP1004Token.mint(addrs[1].address, "testcode2");
+            const testCodeTokenId2 = BigNumber.from(
+                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode2"))
+            );
+            const now = Math.floor(Date.now() / 1000) + 100;
+            await ethers.provider.send("evm_setNextBlockTimestamp", [now]);
+
+            const promises = [];
+            for (let i = 0; i < 15; i++) {
+                promises.push(
+                    MEP1004Token.LocationProofs(
+                        testMEP1002TokenId,
+                        [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                        "test item"
+                    )
+                );
+            }
+            const res = await Promise.all(promises);
+            for (let item of res) {
+                await expect(item).to.ok;
+            }
+
+            await expect(
+                await MEP1004Token.getLocationProofs("test item", 0, 20)
+            ).to.length(15);
+
+            await expect(
+                await MEP1004Token.getLocationProofs("test item", 25, 5)
+            ).to.length(0);
+
+            const promises2 = [];
+            for (let i = 15; i < 51; i++) {
+                promises2.push(
+                    MEP1004Token.LocationProofs(
+                        testMEP1002TokenId,
+                        [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                        "test item"
+                    )
+                );
+            }
+            const res2 = await Promise.all(promises2);
+            for (let item of res2) {
+                await expect(item).to.ok;
+            }
+            await expect(
+                await MEP1004Token.getLocationProofs("test item", 10, 20)
+            ).to.length(20);
+
+            await expect(
+                await MEP1004Token.getLocationProofs("test item", 10, 50)
+            ).to.length(41);
+
+            await expect(
+                await MEP1004Token.getLocationProofs("test item", 0, 61)
+            ).to.length(51);
         });
     });
 

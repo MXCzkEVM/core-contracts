@@ -20,6 +20,7 @@ import {Proxied} from "hardhat-deploy/solc_0.8/proxy/Proxied.sol";
 import {IMEP1004} from "./IMEP1004.sol";
 import {INameWrapper} from "../mns/wrapper/INameWrapper.sol";
 
+    error ERC721InvalidTokenId();
     error ERC721NotApprovedOrOwner();
     error ERC721TokenAlreadyMinted();
     error ProofProverLessThanRequired();
@@ -30,6 +31,7 @@ import {INameWrapper} from "../mns/wrapper/INameWrapper.sol";
     error StatusNotAllow();
     error NoDebt();
     error NoNamingPermission();
+    error InsufficientFee();
 
 contract MEP1004Token is
 IMEP1004,
@@ -62,6 +64,8 @@ UUPSUpgradeable
 
     address private _mnsToken;
 
+    address private _MEP1002Addr;
+
     uint256 private _slotLimit;
 
     uint256 private _exitFee;
@@ -76,6 +80,8 @@ UUPSUpgradeable
         assembly {
             sstore(0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103, _admin)
         }
+        _slotLimit = 10;
+        _exitFee = 50 ether;
         __UUPSUpgradeable_init();
         __ERC721_init(name_, symbol_);
     }
@@ -100,8 +106,16 @@ UUPSUpgradeable
         _mnsToken = mnsToken_;
     }
 
+    function setMEP1002Addr(address MEP1002Addr_) external onlyController {
+        _MEP1002Addr = MEP1002Addr_;
+    }
+
     function setExitFee(uint256 exitFee_) external onlyController {
         _exitFee = exitFee_;
+    }
+
+    function setSlotLimit(uint256 slotLimit_) external onlyController {
+        _slotLimit = slotLimit_;
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -200,8 +214,21 @@ UUPSUpgradeable
         if (!_isApprovedOrOwner(_msgSender(), _tokenId)) {
             revert ERC721NotApprovedOrOwner();
         }
+        if (IERC721(_MEP1002Addr).ownerOf(_mep1002Id) != _MEP1002Addr) {
+            revert ERC721InvalidTokenId();
+        }
         if (_slotIndex >= _slotLimit) {
             revert ExceedSlotLimit();
+        }
+        if (_MEP1002Slot[_mep1002Id].length == 0) {
+            _MEP1002Slot[_mep1002Id] = new uint256[](_slotLimit);
+        }
+        if (_MEP1002Slot[_mep1002Id].length != _slotLimit) {
+            uint256[] memory newArray = new uint256[](_slotLimit);
+            for (uint256 i = 0; i < _MEP1002Slot[_mep1002Id].length && i < _slotLimit; i++) {
+                newArray[i] = _MEP1002Slot[_mep1002Id][i];
+            }
+            _MEP1002Slot[_mep1002Id] = newArray;
         }
         if (_MEP1002Slot[_mep1002Id][_slotIndex] > 0) {
             revert SlotAlreadyUsed();
@@ -219,6 +246,18 @@ UUPSUpgradeable
         );
     }
 
+    function getExitFee() external view returns (uint256) {
+        return _exitFee;
+    }
+
+    function getBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+
+    function withdrawal() external onlyController {
+        payable(_msgSender()).transfer(address(this).balance);
+    }
+
     // Removes the MEP1004 token from the specified slot within a MEP1002 token.
     function removeFromMEP1002Slot(uint256 _tokenId, uint256 _mep1002Id, uint256 _slotIndex) external payable {
         if (!_isApprovedOrOwner(_msgSender(), _tokenId)) {
@@ -227,7 +266,9 @@ UUPSUpgradeable
         if (_MEP1002Slot[_mep1002Id][_slotIndex] != _tokenId) {
             revert NotCorrectSlotIndex();
         }
-        payable(address(this)).sendValue(_exitFee);
+        if (msg.value != _exitFee) {
+            revert InsufficientFee();
+        }
         _MEP1002Slot[_mep1002Id][_slotIndex] = 0;
         _whereSlot[_tokenId] = [0, 0];
         emit RemoveFromMEP1002Slot(
@@ -260,7 +301,9 @@ UUPSUpgradeable
         if (getStatus(_tokenId) != 1) {
             revert NoDebt();
         }
-        payable(address(this)).sendValue(_exitFee);
+        if (msg.value < _exitFee) {
+            revert InsufficientFee();
+        }
         _MEP1004Status[_tokenId] = 0;
     }
 
@@ -271,6 +314,9 @@ UUPSUpgradeable
 
     // Submit the location proofs of anything.
     function LocationProofs(uint256 _MEP1002TokenId, uint256[] memory _MEP1004TokenIds, string memory _item) onlyController external {
+        if (IERC721(_MEP1002Addr).ownerOf(_MEP1002TokenId) != _MEP1002Addr) {
+            revert ERC721InvalidTokenId();
+        }
         if (_MEP1004TokenIds.length < 3) {
             revert ProofProverLessThanRequired();
         }
@@ -293,8 +339,14 @@ UUPSUpgradeable
     function getLocationProofs(string memory _item, uint256 _index, uint256 _batchSize) external view returns (LocationProof[] memory) {
         // length
         uint256 length = _batchSize;
+        if (_index >= _locationProofs[_item].length) {
+            return new LocationProof[](0);
+        }
         if (_batchSize > _locationProofs[_item].length - _index) {
             length = _locationProofs[_item].length - _index;
+        }
+        if (length == 0) {
+            return new LocationProof[](0);
         }
         LocationProof[] memory resultArr = new LocationProof[](length);
         uint256 i = 0;

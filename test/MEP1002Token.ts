@@ -237,6 +237,9 @@ describe("MEP1002Token", function () {
             )
                 .to.emit(MEP1002Token, "MEP1002TokenUpdateName")
                 .withArgs(h3IndexRes7Big, "test.mxc");
+            await expect(MEP1002Token.resetName(h3IndexRes7Big))
+                .to.emit(MEP1002Token, "MEP1002TokenUpdateName")
+                .withArgs(h3IndexRes7Big, "");
         });
         it("should setting name", async function () {
             await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;

@@ -14,15 +14,18 @@ UUPSUpgradeable
 import {
 AddressUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+
 import {ControllableUpgradeable} from "../common/ControllableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Proxied} from "hardhat-deploy/solc_0.8/proxy/Proxied.sol";
 import {IMEP1004} from "./IMEP1004.sol";
 import {INameWrapper} from "../mns/wrapper/INameWrapper.sol";
 
+
     error ERC721InvalidTokenId();
     error ERC721NotApprovedOrOwner();
     error ERC721TokenAlreadyMinted();
+    error SNCodeNotAllow();
     error ProofProverLessThanRequired();
     error AlreadyInsertOtherSlot();
     error ExceedSlotLimit();
@@ -44,16 +47,16 @@ UUPSUpgradeable
 
     using StringsUpgradeable for uint256;
 
-
     event MEP1004TokenUpdateName(uint256 indexed tokenId, string indexed name);
 
     mapping(string => LocationProof[]) private _locationProofs;
 
     mapping(uint256 => string) private _SNCodes;
 
-    mapping(uint256 => uint256[]) private _MEP1002Slot;
+    mapping(uint256 => mapping(uint256 => uint256[])) private _MEP1002Slot;
 
-    mapping(uint256 => uint256[2]) private _whereSlot;
+    // tokenId => slotIndex => [MEP1002TokenId, SNCodeType, slotIndex]
+    mapping(uint256 => uint256[3]) private _whereSlot;
 
     // 0 = normal, 1 = debt
     mapping(uint256 => uint256) private _MEP1004Status;
@@ -66,7 +69,7 @@ UUPSUpgradeable
 
     address private _MEP1002Addr;
 
-    uint256 private _slotLimit;
+    uint256[] private _slotLimits;
 
     uint256 private _exitFee;
 
@@ -80,7 +83,7 @@ UUPSUpgradeable
         assembly {
             sstore(0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103, _admin)
         }
-        _slotLimit = 10;
+        _slotLimits = [10, 50];
         _exitFee = 50 ether;
         __UUPSUpgradeable_init();
         __ERC721_init(name_, symbol_);
@@ -93,6 +96,9 @@ UUPSUpgradeable
         uint256 tokenId = uint256(keccak256(bytes(_SNCode)));
         if (_exists(tokenId)) {
             revert ERC721TokenAlreadyMinted();
+        }
+        if (getSNCodeType(_SNCode) == type(uint256).max) {
+            revert SNCodeNotAllow();
         }
         _safeMint(to, tokenId);
         _SNCodes[tokenId] = _SNCode;
@@ -114,9 +120,34 @@ UUPSUpgradeable
         _exitFee = exitFee_;
     }
 
-    function setSlotLimit(uint256 slotLimit_) external onlyController {
-        _slotLimit = slotLimit_;
+    function setSlotLimit(uint256[] memory slotLimits_) external onlyController {
+        _slotLimits = slotLimits_;
     }
+
+    function withdrawal() external onlyController {
+        payable(_msgSender()).transfer(address(this).balance);
+    }
+
+    function removeFromMEP1002SlotAdmin(uint256 _tokenId, uint256 _mep1002Id, uint256 _slotIndex) onlyController external {
+        uint256 SNCodeType = getSNCodeType(_SNCodes[_tokenId]);
+        if (SNCodeType == type(uint256).max) {
+            revert SNCodeNotAllow();
+        }
+        if (_MEP1002Slot[_mep1002Id][SNCodeType][_slotIndex] != _tokenId) {
+            revert NotCorrectSlotIndex();
+        }
+        _MEP1002Slot[_mep1002Id][SNCodeType][_slotIndex] = 0;
+        _MEP1004Status[_tokenId] = 1;
+        _whereSlot[_tokenId] = [0, 0, 0];
+        emit RemoveFromMEP1002Slot(
+            _mep1002Id,
+            _tokenId,
+            _slotIndex,
+            SNCodeType
+        );
+    }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     function _baseURI() internal view override returns (string memory) {
         return _baseUri;
@@ -142,7 +173,48 @@ UUPSUpgradeable
         ) : "";
     }
 
-    function _authorizeUpgrade(address) internal override onlyOwner {}
+
+    function tokenNames(uint256 _tokenId) external view returns (string memory) {
+        return _MEP1004TokenNames[_tokenId];
+    }
+
+    /**
+     * @dev Returns the status of the token.
+     */
+    function getStatus(uint256 _tokenId) public view returns (uint256) {
+        return _MEP1004Status[_tokenId];
+    }
+
+    /**
+     * @dev Check the status of the token, if not zero, it will revert.
+     */
+    function checkStatus(uint256 _tokenId) internal view {
+        if (_MEP1004Status[_tokenId] > 0) {
+            revert StatusNotAllow();
+        }
+    }
+
+    /*
+    * @dev Returns the encrypted S/N code of the device.
+    */
+    function getSNCode(uint256 _tokenId) external view returns (string memory) {
+        return _SNCodes[_tokenId];
+    }
+
+    /**
+    * @dev Returns the limit number of slots that can be inserted with the MEP1002 token.
+     */
+    function slotLimits() external view returns (uint256[] memory) {
+        return _slotLimits;
+    }
+
+    function getExitFee() external view returns (uint256) {
+        return _exitFee;
+    }
+
+    function getBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
 
     function setName(uint256 _tokenId, uint256 _nameWrapperTokenId) external {
         if (!_isApprovedOrOwner(_msgSender(), _tokenId)) {
@@ -172,44 +244,24 @@ UUPSUpgradeable
         );
     }
 
-    function tokenNames(uint256 _tokenId) external view returns (string memory) {
-        return _MEP1004TokenNames[_tokenId];
-    }
-
-    // Returns the status of the token.
-    function getStatus(uint256 _tokenId) public view returns (uint256) {
-        return _MEP1004Status[_tokenId];
-    }
-
-    // Check the status of the token, if not zero, it will revert.
-    function checkStatus(uint256 _tokenId) internal view {
-        if (_MEP1004Status[_tokenId] > 0) {
-            revert StatusNotAllow();
-        }
-    }
-
-    // Returns the encrypted S/N code of the device.
-    function getSNCode(uint256 _tokenId) external view returns (string memory) {
-        return _SNCodes[_tokenId];
-    }
-
-    // Returns the limit number of slots that can be inserted with the MEP1002 token.
-    function slotLimit(uint256 _mep1002Id) external view returns (uint256) {
-        return _slotLimit;
-    }
-
-    // Returns the number of slots inserted with the MEP1004 token in the specified MEP1002 token.
-    function numInsertedSlots(uint256 _mep1002Id) external view returns (uint256) {
-        uint256 count = 0;
-        for (uint256 i = 0; i < _slotLimit; i++) {
-            if (_MEP1002Slot[_mep1002Id][i] > 0) {
-                count++;
+    /**
+     * @dev Returns the number of slots inserted with the MEP1004 token in the specified MEP1002 token.
+     */
+    function numInsertedSlots(uint256 _mep1002Id) external view returns (uint256[] memory) {
+        uint256[] memory slotLengths = new uint256[](_slotLimits.length);
+        for (uint256 i = 0; i < _slotLimits.length; i++) {
+            for (uint256 j = 0; j < _slotLimits.length; j++) {
+                if (_MEP1002Slot[_mep1002Id][i][j] > 0) {
+                    slotLengths[i]++;
+                }
             }
         }
-        return count;
+        return slotLengths;
     }
 
-    // Inserts the MEP1004 token to the specified slot within a MEP1002 token.
+    /**
+     * @dev Inserts the MEP1004 token to the specified slot within a MEP1002 token.
+     */
     function insertToMEP1002Slot(uint256 _tokenId, uint256 _mep1002Id, uint256 _slotIndex) external {
         if (!_isApprovedOrOwner(_msgSender(), _tokenId)) {
             revert ERC721NotApprovedOrOwner();
@@ -217,102 +269,63 @@ UUPSUpgradeable
         if (IERC721(_MEP1002Addr).ownerOf(_mep1002Id) != _MEP1002Addr) {
             revert ERC721InvalidTokenId();
         }
-        if (_slotIndex >= _slotLimit) {
+        uint256 SNCodeType = getSNCodeType(_SNCodes[_tokenId]);
+        if (SNCodeType == type(uint256).max) {
+            revert SNCodeNotAllow();
+        }
+        if (_slotIndex >= _slotLimits[SNCodeType]) {
             revert ExceedSlotLimit();
-        }
-        if (_MEP1002Slot[_mep1002Id].length == 0) {
-            _MEP1002Slot[_mep1002Id] = new uint256[](_slotLimit);
-        }
-        if (_MEP1002Slot[_mep1002Id].length != _slotLimit) {
-            uint256[] memory newArray = new uint256[](_slotLimit);
-            for (uint256 i = 0; i < _MEP1002Slot[_mep1002Id].length && i < _slotLimit; i++) {
-                newArray[i] = _MEP1002Slot[_mep1002Id][i];
-            }
-            _MEP1002Slot[_mep1002Id] = newArray;
-        }
-        if (_MEP1002Slot[_mep1002Id][_slotIndex] > 0) {
-            revert SlotAlreadyUsed();
         }
         if (_whereSlot[_tokenId][0] > 0) {
             revert AlreadyInsertOtherSlot();
         }
+        if (_MEP1002Slot[_mep1002Id][SNCodeType].length == 0) {
+            _MEP1002Slot[_mep1002Id][SNCodeType] = new uint256[](_slotLimits[SNCodeType]);
+        }
+        if (_MEP1002Slot[_mep1002Id][SNCodeType][_slotIndex] > 0) {
+            revert SlotAlreadyUsed();
+        }
         checkStatus(_tokenId);
-        _MEP1002Slot[_mep1002Id][_slotIndex] = _tokenId;
-        _whereSlot[_tokenId] = [_mep1002Id, _slotIndex];
+        _MEP1002Slot[_mep1002Id][SNCodeType][_slotIndex] = _tokenId;
+        _whereSlot[_tokenId] = [_mep1002Id, SNCodeType, _slotIndex];
         emit InsertToMEP1002Slot(
             _mep1002Id,
             _tokenId,
-            _slotIndex
+            _slotIndex,
+            SNCodeType
         );
     }
 
-    function getExitFee() external view returns (uint256) {
-        return _exitFee;
-    }
-
-    function getBalance() external view returns (uint256) {
-        return address(this).balance;
-    }
-
-    function withdrawal() external onlyController {
-        payable(_msgSender()).transfer(address(this).balance);
-    }
-
-    // Removes the MEP1004 token from the specified slot within a MEP1002 token.
+    /**
+     * @dev Removes the MEP1004 token from the specified slot within a MEP1002 token.
+     */
     function removeFromMEP1002Slot(uint256 _tokenId, uint256 _mep1002Id, uint256 _slotIndex) external payable {
         if (!_isApprovedOrOwner(_msgSender(), _tokenId)) {
             revert ERC721NotApprovedOrOwner();
         }
-        if (_MEP1002Slot[_mep1002Id][_slotIndex] != _tokenId) {
+        uint256 SNCodeType = getSNCodeType(_SNCodes[_tokenId]);
+        if (SNCodeType == type(uint256).max) {
+            revert SNCodeNotAllow();
+        }
+        if (_MEP1002Slot[_mep1002Id][SNCodeType][_slotIndex] != _tokenId) {
             revert NotCorrectSlotIndex();
         }
         if (msg.value != _exitFee) {
             revert InsufficientFee();
         }
-        _MEP1002Slot[_mep1002Id][_slotIndex] = 0;
-        _whereSlot[_tokenId] = [0, 0];
+        _MEP1002Slot[_mep1002Id][SNCodeType][_slotIndex] = 0;
+        _whereSlot[_tokenId] = [0, 0, 0];
         emit RemoveFromMEP1002Slot(
             _mep1002Id,
             _tokenId,
-            _slotIndex
+            _slotIndex,
+            SNCodeType
         );
     }
 
-    // Inserts the MEP1004 token to the specified slot within a MEP1002 token.
-    function removeFromMEP1002SlotAdmin(uint256 _tokenId, uint256 _mep1002Id, uint256 _slotIndex) onlyController external {
-        if (_MEP1002Slot[_mep1002Id][_slotIndex] != _tokenId) {
-            revert NotCorrectSlotIndex();
-        }
-        _MEP1002Slot[_mep1002Id][_slotIndex] = 0;
-        _MEP1004Status[_tokenId] = 1;
-        _whereSlot[_tokenId] = [0, 0];
-        emit RemoveFromMEP1002Slot(
-            _mep1002Id,
-            _tokenId,
-            _slotIndex
-        );
-    }
-
-    // pay exit fee
-    function payExitFee(uint256 _tokenId) external payable {
-        if (!_isApprovedOrOwner(_msgSender(), _tokenId)) {
-            revert ERC721NotApprovedOrOwner();
-        }
-        if (getStatus(_tokenId) != 1) {
-            revert NoDebt();
-        }
-        if (msg.value < _exitFee) {
-            revert InsufficientFee();
-        }
-        _MEP1004Status[_tokenId] = 0;
-    }
-
-    // search the MEP1004 token in the specified slot within a MEP1002 token.
-    function whereSlot(uint256 _tokenId) external view returns (uint256[2] memory) {
-        return _whereSlot[_tokenId];
-    }
-
-    // Submit the location proofs of anything.
+    /**
+     * @dev Submit the location proofs of anything.
+     */
     function LocationProofs(uint256 _MEP1002TokenId, uint256[] memory _MEP1004TokenIds, string memory _item) onlyController external {
         if (IERC721(_MEP1002Addr).ownerOf(_MEP1002TokenId) != _MEP1002Addr) {
             revert ERC721InvalidTokenId();
@@ -330,12 +343,36 @@ UUPSUpgradeable
         emit NewLocationProof(_MEP1002TokenId, _item, locationProof);
     }
 
-    // get the latest location proofs of anything.
+    function payExitFee(uint256 _tokenId) external payable {
+        if (!_isApprovedOrOwner(_msgSender(), _tokenId)) {
+            revert ERC721NotApprovedOrOwner();
+        }
+        if (getStatus(_tokenId) != 1) {
+            revert NoDebt();
+        }
+        if (msg.value < _exitFee) {
+            revert InsufficientFee();
+        }
+        _MEP1004Status[_tokenId] = 0;
+    }
+
+    /**
+     * @dev search the MEP1004 token in the specified slot within a MEP1002 token.
+     */
+    function whereSlot(uint256 _tokenId) external view returns (uint256[3] memory) {
+        return _whereSlot[_tokenId];
+    }
+
+    /**
+     * @dev get the latest location proofs of anything.
+     */
     function latestLocationProofs(string memory _item) external view returns (LocationProof memory) {
         return _locationProofs[_item][_locationProofs[_item].length - 1];
     }
 
-    // get the recent location proofs of anything.
+    /**
+     * @dev get the recent location proofs of anything.
+     */
     function getLocationProofs(string memory _item, uint256 _index, uint256 _batchSize) external view returns (LocationProof[] memory) {
         // length
         uint256 length = _batchSize;
@@ -358,6 +395,45 @@ UUPSUpgradeable
         return resultArr;
     }
 
-    uint256[40] private __gap;
+
+    function getSNCodeType(string memory _str) internal pure returns (uint256) {
+        bytes memory strBytes = bytes(_str);
+        bytes memory m2xBytes = bytes("M2X");
+        uint256 m2xIdx = indexOf(strBytes, m2xBytes);
+        if (m2xIdx != type(uint256).max) {
+            return 0;
+        }
+
+        bytes memory neoBytes = bytes("NEO");
+        uint256 neoIdx = indexOf(strBytes, neoBytes);
+        if (neoIdx != type(uint256).max) {
+            return 1;
+        }
+        return type(uint256).max;
+    }
+
+    function indexOf(bytes memory _str, bytes memory _subStr) internal pure returns (uint256) {
+        require(_subStr.length <= _str.length, "Cannot find a longer string in a shorter one");
+        uint i;
+        uint j;
+        for (i = 0; i <= _str.length - _subStr.length; i++) {
+            bool found = true;
+            for (j = 0; j < _subStr.length; j++) {
+                if (_str[i + j] != _subStr[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return i;
+            }
+        }
+
+        return type(uint256).max;
+        // String does not contain substring
+
+    }
+
+    uint256[39] private __gap;
 }
 

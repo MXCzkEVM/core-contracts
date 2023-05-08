@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             execute: {
                 init: {
                     methodName: "initialize",
-                    args: ["MEP1004Token", "MEP1004", deployer],
+                    args: ["MEP1004Stations", "MEP1004", deployer],
                 },
             },
         },
@@ -27,6 +27,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const MEP1004Token = await ethers.getContract<MEP1004Token>("MEP1004Token");
     await MEP1004Token.setMNSToken(
         "0x61C48101ccE16653573e80c64b4bD4a4C3111Ce8"
+    );
+    await MEP1004Token.setMEP1002Addr(
+        "0x8DD0d6b0238c26C14946095181A6C9671970B7cA"
     );
     const ownerStorage = await ethers.provider.getStorageAt(
         tx.address,

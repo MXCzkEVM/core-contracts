@@ -67,7 +67,7 @@ describe("MEP1004Token", function () {
         "68949889097187516169332801510365581835791041465326974816460712402969489861206"
     );
 
-    const testSNCode = "testcode";
+    const testSNCode = "NEO-1235421";
     const testSNCodeTokenId = BigNumber.from(
         `${ethers.utils.keccak256(ethers.utils.toUtf8Bytes(testSNCode))}`
     );
@@ -102,7 +102,8 @@ describe("MEP1004Token", function () {
         });
 
         it("cannot mint by invalid sncode", async function () {
-            await expect(MEP1004Token.mint(owner.address, "")).to.be.reverted;
+            await expect(MEP1004Token.mint(owner.address, "test")).to.be
+                .reverted;
         });
 
         it("cannot mint already minted token", async function () {
@@ -250,11 +251,11 @@ describe("MEP1004Token", function () {
             await MEP1004Token.insertToMEP1002Slot(
                 testSNCodeTokenId,
                 testMEP1002TokenId,
-                0
+                1
             );
             await expect(
                 await MEP1004Token.whereSlot(testSNCodeTokenId)
-            ).to.deep.equals([testMEP1002TokenId, 0]);
+            ).to.deep.equals([testMEP1002TokenId, 1, 1]);
         });
 
         it("should allow owner to set the exit fee", async function () {
@@ -356,13 +357,17 @@ describe("MEP1004Token", function () {
         it("should allow owner to set the location proof", async function () {
             await MEP1002Token.mint(testMEP1002TokenId);
             await MEP1004Token.mint(owner.address, testSNCode);
-            await MEP1004Token.mint(addrs[1].address, "testcode1");
+            await MEP1004Token.mint(addrs[1].address, "M2X-testcode1");
             const testCodeTokenId1 = BigNumber.from(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode1"))
+                ethers.utils.keccak256(
+                    ethers.utils.toUtf8Bytes("M2X-testcode1")
+                )
             );
-            await MEP1004Token.mint(addrs[1].address, "testcode2");
+            await MEP1004Token.mint(addrs[1].address, "NEO-testcode2");
             const testCodeTokenId2 = BigNumber.from(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode2"))
+                ethers.utils.keccak256(
+                    ethers.utils.toUtf8Bytes("NEO-testcode2")
+                )
             );
             const now = Math.floor(Date.now() / 1000) + 100;
             await ethers.provider.send("evm_setNextBlockTimestamp", [now]);
@@ -379,13 +384,17 @@ describe("MEP1004Token", function () {
         it("should return latest Location Proof", async function () {
             await MEP1002Token.mint(testMEP1002TokenId);
             await MEP1004Token.mint(owner.address, testSNCode);
-            await MEP1004Token.mint(addrs[1].address, "testcode1");
+            await MEP1004Token.mint(addrs[1].address, "M2X-testcode1");
             const testCodeTokenId1 = BigNumber.from(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode1"))
+                ethers.utils.keccak256(
+                    ethers.utils.toUtf8Bytes("M2X-testcode1")
+                )
             );
-            await MEP1004Token.mint(addrs[1].address, "testcode2");
+            await MEP1004Token.mint(addrs[1].address, "NEO-testcode2");
             const testCodeTokenId2 = BigNumber.from(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode2"))
+                ethers.utils.keccak256(
+                    ethers.utils.toUtf8Bytes("NEO-testcode2")
+                )
             );
             const now = Math.floor(Date.now() / 1000) + 100;
             await ethers.provider.send("evm_setNextBlockTimestamp", [now]);
@@ -409,13 +418,17 @@ describe("MEP1004Token", function () {
         it("should return correct proofs", async function () {
             await MEP1002Token.mint(testMEP1002TokenId);
             await MEP1004Token.mint(owner.address, testSNCode);
-            await MEP1004Token.mint(addrs[1].address, "testcode1");
+            await MEP1004Token.mint(addrs[1].address, "M2X-testcode1");
             const testCodeTokenId1 = BigNumber.from(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode1"))
+                ethers.utils.keccak256(
+                    ethers.utils.toUtf8Bytes("M2X-testcode1")
+                )
             );
-            await MEP1004Token.mint(addrs[1].address, "testcode2");
+            await MEP1004Token.mint(addrs[1].address, "NEO-testcode2");
             const testCodeTokenId2 = BigNumber.from(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes("testcode2"))
+                ethers.utils.keccak256(
+                    ethers.utils.toUtf8Bytes("NEO-testcode2")
+                )
             );
             const now = Math.floor(Date.now() / 1000) + 100;
             await ethers.provider.send("evm_setNextBlockTimestamp", [now]);

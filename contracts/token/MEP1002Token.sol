@@ -157,7 +157,7 @@ UUPSUpgradeable
     address private _mnsToken;
 
     event MEP1002TokenUpdateName(
-        uint256 tokenId,
+        uint256 indexed tokenId,
         string name
     );
 

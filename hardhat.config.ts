@@ -51,7 +51,7 @@ const config: HardhatUserConfig = {
     },
     networks: {
         hardhat: {
-            tags: ["test"],
+            tags: ["test", "upgrade"],
             gas: 8000000,
             saveDeployments: true,
             allowUnlimitedContractSize: true,

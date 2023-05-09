@@ -43,11 +43,27 @@ ControllableUpgradeable,
 Proxied,
 UUPSUpgradeable
 {
+
+
     using AddressUpgradeable for address payable;
 
     using StringsUpgradeable for uint256;
 
-    event MEP1004TokenUpdateName(uint256 indexed tokenId, string indexed name);
+    event InsertToMEP1002Slot(
+        uint256 MEP1002TokenId,
+        uint256 MEP1004TokenId,
+        uint256 slotIndex,
+        uint256 SNCodeType
+    );
+
+    event RemoveFromMEP1002Slot(
+        uint256 MEP1002TokenId,
+        uint256 MEP1004TokenId,
+        uint256 slotIndex,
+        uint256 SNCodeType
+    );
+
+    event MEP1004TokenUpdateName(uint256 tokenId, string name);
 
     mapping(string => LocationProof[]) private _locationProofs;
 

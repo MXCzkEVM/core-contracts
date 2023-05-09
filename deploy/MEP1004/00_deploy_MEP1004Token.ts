@@ -24,22 +24,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: [],
         log: true,
     });
-    const MEP1004Token = await ethers.getContract<MEP1004Token>("MEP1004Token");
-    await MEP1004Token.setMNSToken(
-        "0x61C48101ccE16653573e80c64b4bD4a4C3111Ce8"
-    );
-    await MEP1004Token.setMEP1002Addr(
-        "0x8DD0d6b0238c26C14946095181A6C9671970B7cA"
-    );
-    const ownerStorage = await ethers.provider.getStorageAt(
-        tx.address,
-        "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
-    );
-    const currentOwner = getAddress(`0x${ownerStorage.substr(-40)}`);
-    console.log("currentOwner", currentOwner);
-    console.log(`Deployed MEP1004Token to ${tx.address}`);
+    if (tx.newlyDeployed) {
+        const MEP1004Token = await ethers.getContract<MEP1004Token>(
+            "MEP1004Token"
+        );
+        await MEP1004Token.setMNSToken(
+            "0x61C48101ccE16653573e80c64b4bD4a4C3111Ce8"
+        );
+        await MEP1004Token.setMEP1002Addr(
+            "0x8DD0d6b0238c26C14946095181A6C9671970B7cA"
+        );
+        const ownerStorage = await ethers.provider.getStorageAt(
+            tx.address,
+            "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+        );
+        const currentOwner = getAddress(`0x${ownerStorage.substr(-40)}`);
+        console.log("currentOwner", currentOwner);
+        console.log(`Deployed MEP1004Token to ${tx.address}`);
+    }
 };
 
 func.tags = ["MEP1004"];
+func.dependencies = ["MEP1002"];
 
 export default func;

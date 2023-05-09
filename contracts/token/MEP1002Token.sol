@@ -157,8 +157,8 @@ UUPSUpgradeable
     address private _mnsToken;
 
     event MEP1002TokenUpdateName(
-        uint256 indexed tokenId,
-        string indexed name
+        uint256 tokenId,
+        string name
     );
 
     function initialize(
@@ -300,7 +300,7 @@ UUPSUpgradeable
      * @dev See {IERC721Metadata-name}.
      */
     function name() public view virtual override returns (string memory) {
-        return _name;
+        return "MEP1002 Hexagon";
     }
 
     /**
@@ -621,7 +621,7 @@ UUPSUpgradeable
         address targetContract,
         uint256 targetId
     ) private view {
-        for (uint256 i; i < _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP;) {
+        for (uint256 i; i < 100;) {
             (
             address nextOwner,
             uint256 nextOwnerTokenId,

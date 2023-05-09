@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             execute: {
                 init: {
                     methodName: "initialize",
-                    args: ["MEP1002NamingToken", "MEP1002NT", deployer],
+                    args: ["MEP1002HexagonNamingToken", "MEP1002NT", deployer],
                 },
             },
         },

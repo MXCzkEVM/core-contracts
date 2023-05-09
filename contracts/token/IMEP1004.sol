@@ -11,7 +11,7 @@ interface IMEP1004 /*is IERC721*/ {
     }
 
     event NewLocationProof(
-        uint256 MEP1002TokenId,
+        uint256 indexed MEP1002TokenId,
         string item,
         LocationProof locationProof
     );

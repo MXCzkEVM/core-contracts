@@ -7,6 +7,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { getNamedAccounts, deployments, ethers } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
+    if (!hre.network.tags.hasOwnProperty("LPWAN")) {
+        return;
+    }
     const MEP1004Token = await ethers.getContract<MEP1004Token>("MEP1004Token");
     const tx = await deploy("LPWAN", {
         from: deployer,

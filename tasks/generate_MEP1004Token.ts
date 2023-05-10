@@ -35,7 +35,10 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
     const MEP1004 = await ethers.getContract<MEP1004Token>("MEP1004Token");
     const nonce = await deployer.getTransactionCount();
     let tranCount = 0;
-    const MEP1002TokenId = getRandomMEP1002TokenId();
+    const MEP1002TokenIds = [
+        BigNumber.from("608530350842314751"), //  podgorica edcon2023.mxc
+        BigNumber.from("608533319822344191"), // berlin techcode.mxc
+    ];
     // const M2XTestSNCode = getRandomM2XTestSNCode();
     // const NEOTestSNCode1 = getRandomNEOTestSNCode();
     // const NEOTestSNCode2 = getRandomNEOTestSNCode();
@@ -47,7 +50,6 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
     //     }
     // );
     //
-    const RandomAssets = getRandomAssets();
     // await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode1, {
     //     nonce: nonce + 1,
     // });
@@ -65,6 +67,8 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
     const NEOTestSNCode2 = await MEP1004.getSNCode(3);
     try {
         while (true) {
+            const MEP1002TokenId = MEP1002TokenIds[tranCount % 2];
+            const RandomAssets = getRandomAssets();
             await LPWAN.submitLocationProofs(
                 MEP1002TokenId,
                 [
@@ -72,7 +76,7 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
                     NEOTestSNCode1TokenId,
                     NEOTestSNCode2TokenId,
                 ],
-                RandomAssets,
+                RandomAssets.toString(),
                 {
                     nonce: nonce + tranCount,
                 }
@@ -111,7 +115,8 @@ function getRandomNEOTestSNCode() {
 }
 
 function getRandomAssets() {
-    return `P${randomString(20, randomChars)}`;
+    // return `P${randomString(20, randomChars)}`;
+    return Math.floor(Math.random() * 6);
 }
 
 const randomChars = "1234567890ABCDEFGHIJKL";

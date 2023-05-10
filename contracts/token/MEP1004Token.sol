@@ -245,6 +245,22 @@ UUPSUpgradeable
         return _slotLimits;
     }
 
+    /**
+     * @dev Returns the number of slots inserted with the MEP1004 token in the specified MEP1002 token.
+     */
+    function getMEP1002Slot(uint256 _mep1002Id) external view returns (uint256[][] memory) {
+        uint256[][] memory result = new uint256[][](_slotLimits.length);
+        for (uint256 i = 0; i < _slotLimits.length; i++) {
+            if (_MEP1002Slot[_mep1002Id][i].length == 0) {
+                result[i] = new uint256[](_slotLimits[i]);
+            } else {
+                result[i] = _MEP1002Slot[_mep1002Id][i];
+            }
+        }
+        return result;
+    }
+
+
     function getExitFee() external view returns (uint256) {
         return _exitFee;
     }
@@ -281,20 +297,6 @@ UUPSUpgradeable
         );
     }
 
-    /**
-     * @dev Returns the number of slots inserted with the MEP1004 token in the specified MEP1002 token.
-     */
-    function numInsertedSlots(uint256 _mep1002Id) external view returns (uint256[] memory) {
-        uint256[] memory slotLengths = new uint256[](_slotLimits.length);
-        for (uint256 i = 0; i < _slotLimits.length; i++) {
-            for (uint256 j = 0; j < _slotLimits.length; j++) {
-                if (_MEP1002Slot[_mep1002Id][i][j] > 0) {
-                    slotLengths[i]++;
-                }
-            }
-        }
-        return slotLengths;
-    }
 
     /**
      * @dev Inserts the MEP1004 token to the specified slot within a MEP1002 token.

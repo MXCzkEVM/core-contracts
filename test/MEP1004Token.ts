@@ -67,10 +67,7 @@ describe("MEP1004Token", function () {
         "68949889097187516169332801510365581835791041465326974816460712402969489861206"
     );
 
-    const testSNCode = "NEO-1235421";
-    const testSNCodeTokenId = BigNumber.from(
-        `${ethers.utils.keccak256(ethers.utils.toUtf8Bytes(testSNCode))}`
-    );
+    const testSNCode = "NEOTEST1235421";
     const testMEP1002TokenId = BigNumber.from("611831265154301951");
     describe("Init", async function () {
         it("cannot init again", async function () {
@@ -235,6 +232,16 @@ describe("MEP1004Token", function () {
             ]);
         });
 
+        it("should return slot num", async function () {
+            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1002Token.mint(testMEP1002TokenId);
+            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 1);
+
+            const slots = await MEP1004Token.getMEP1002Slot(testMEP1002TokenId);
+
+            await expect(slots[1][1]).to.equal(1);
+        });
+
         it("should allow owner to set the exit fee", async function () {
             await expect(
                 await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
@@ -296,22 +303,16 @@ describe("MEP1004Token", function () {
             await expect(await MEP1004Token.getStatus(1)).to.equals(1);
 
             await expect(
-                MEP1004Token.insertToMEP1002Slot(
-                    testSNCodeTokenId,
-                    testMEP1002TokenId,
-                    0
-                )
+                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0)
             ).to.be.reverted;
 
             await expect(
-                MEP1004Token.payExitFee(testSNCodeTokenId, {
+                MEP1004Token.payExitFee(1, {
                     value: ethers.utils.parseEther("50"),
                 })
             ).to.be.ok;
 
-            await expect(
-                await MEP1004Token.getStatus(testSNCodeTokenId)
-            ).to.equals(0);
+            await expect(await MEP1004Token.getStatus(1)).to.equals(0);
         });
     });
 

@@ -133,63 +133,47 @@ describe("MEP1004Token", function () {
                 .withArgs(
                     "0x0000000000000000000000000000000000000000",
                     owner.address,
-                    testSNCodeTokenId
+                    1
                 );
         });
 
         it("should set name event", async function () {
             await MEP1004Token.mint(owner.address, testSNCode);
-            await expect(
-                MEP1004Token.setName(testSNCodeTokenId, testDotMXCTokenId)
-            )
+            await expect(MEP1004Token.setName(1, testDotMXCTokenId))
                 .to.emit(MEP1004Token, "MEP1004TokenUpdateName")
-                .withArgs(testSNCodeTokenId, "test.mxc");
+                .withArgs(1, "test.mxc");
 
-            await expect(MEP1004Token.resetName(testSNCodeTokenId))
+            await expect(MEP1004Token.resetName(1))
                 .to.emit(MEP1004Token, "MEP1004TokenUpdateName")
-                .withArgs(testSNCodeTokenId, "");
+                .withArgs(1, "");
         });
 
         it("should setting name", async function () {
             await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
                 .ok;
-            await expect(
-                await MEP1004Token.tokenNames(testSNCodeTokenId)
-            ).to.equal("");
-            await expect(
-                await MEP1004Token.setName(testSNCodeTokenId, testDotMXCTokenId)
-            ).to.ok;
-            await expect(
-                await MEP1004Token.tokenNames(testSNCodeTokenId)
-            ).to.equal("test.mxc");
+            await expect(await MEP1004Token.tokenNames(1)).to.equal("");
+            await expect(await MEP1004Token.setName(1, testDotMXCTokenId)).to
+                .ok;
+            await expect(await MEP1004Token.tokenNames(1)).to.equal("test.mxc");
         });
 
         it("should reset name", async function () {
             await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
                 .ok;
-            await expect(
-                await MEP1004Token.tokenNames(testSNCodeTokenId)
-            ).to.equal("");
-            await expect(
-                await MEP1004Token.setName(testSNCodeTokenId, testDotMXCTokenId)
-            ).to.ok;
-            await expect(
-                await MEP1004Token.tokenNames(testSNCodeTokenId)
-            ).to.equal("test.mxc");
-            await expect(await MEP1004Token.resetName(testSNCodeTokenId)).to.ok;
-            await expect(
-                await MEP1004Token.tokenNames(testSNCodeTokenId)
-            ).to.equal("");
+            await expect(await MEP1004Token.tokenNames(1)).to.equal("");
+            await expect(await MEP1004Token.setName(1, testDotMXCTokenId)).to
+                .ok;
+            await expect(await MEP1004Token.tokenNames(1)).to.equal("test.mxc");
+            await expect(await MEP1004Token.resetName(1)).to.ok;
+            await expect(await MEP1004Token.tokenNames(1)).to.equal("");
         });
 
         it("should get uri", async function () {
             await MEP1004Token.setBaseURI("https://wannsee-test.mxc.com/");
             await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
                 .ok;
-            await expect(
-                await MEP1004Token.tokenURI(testSNCodeTokenId)
-            ).to.equal(
-                `https://wannsee-test.mxc.com/${testSNCodeTokenId.toString()}?name=`
+            await expect(await MEP1004Token.tokenURI(1)).to.equal(
+                `https://wannsee-test.mxc.com/1?name=`
             );
         });
 
@@ -198,6 +182,18 @@ describe("MEP1004Token", function () {
                 .ok;
             await expect(await MEP1004Token.totalSupply()).to.equal(1);
         });
+
+        it("should return sncode", async function () {
+            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+                .ok;
+            await expect(await MEP1004Token.getSNCode(1)).to.equal(testSNCode);
+        });
+
+        it("should return tokenid", async function () {
+            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+                .ok;
+            await expect(await MEP1004Token.getTokenId(testSNCode)).to.equal(1);
+        });
     });
 
     describe("MEP1002Slots", async function () {
@@ -205,18 +201,10 @@ describe("MEP1004Token", function () {
             await MEP1004Token.mint(owner.address, testSNCode);
             await MEP1002Token.mint(testMEP1002TokenId);
             await expect(
-                MEP1004Token.insertToMEP1002Slot(
-                    testSNCodeTokenId,
-                    testMEP1002TokenId,
-                    123
-                )
+                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 123)
             ).to.be.revertedWithCustomError(MEP1004Token, "ExceedSlotLimit");
             await expect(
-                MEP1004Token.insertToMEP1002Slot(
-                    testSNCodeTokenId,
-                    testMEP1002TokenId,
-                    0
-                )
+                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0)
             ).to.emit(MEP1004Token, "InsertToMEP1002Slot");
         });
 
@@ -224,23 +212,14 @@ describe("MEP1004Token", function () {
             await MEP1004Token.mint(owner.address, testSNCode);
             await MEP1002Token.mint(testMEP1002TokenId);
 
-            await MEP1004Token.insertToMEP1002Slot(
-                testSNCodeTokenId,
-                testMEP1002TokenId,
-                0
-            );
+            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0);
             await expect(
                 await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
             ).to.ok;
             await expect(
-                MEP1004Token.removeFromMEP1002Slot(
-                    testSNCodeTokenId,
-                    testMEP1002TokenId,
-                    0,
-                    {
-                        value: ethers.utils.parseEther("50"),
-                    }
-                )
+                MEP1004Token.removeFromMEP1002Slot(1, testMEP1002TokenId, 0, {
+                    value: ethers.utils.parseEther("50"),
+                })
             ).to.emit(MEP1004Token, "RemoveFromMEP1002Slot");
         });
 
@@ -248,14 +227,12 @@ describe("MEP1004Token", function () {
             await MEP1004Token.mint(owner.address, testSNCode);
             await MEP1002Token.mint(testMEP1002TokenId);
 
-            await MEP1004Token.insertToMEP1002Slot(
-                testSNCodeTokenId,
+            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 1);
+            await expect(await MEP1004Token.whereSlot(1)).to.deep.equals([
                 testMEP1002TokenId,
-                1
-            );
-            await expect(
-                await MEP1004Token.whereSlot(testSNCodeTokenId)
-            ).to.deep.equals([testMEP1002TokenId, 1, 1]);
+                1,
+                1,
+            ]);
         });
 
         it("should allow owner to set the exit fee", async function () {
@@ -280,20 +257,11 @@ describe("MEP1004Token", function () {
                 await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
             ).to.ok;
             await MEP1004Token.mint(owner.address, testSNCode);
-            await MEP1004Token.insertToMEP1002Slot(
-                testSNCodeTokenId,
-                testMEP1002TokenId,
-                0
-            );
+            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0);
             await expect(
-                MEP1004Token.removeFromMEP1002Slot(
-                    testSNCodeTokenId,
-                    testMEP1002TokenId,
-                    0,
-                    {
-                        value: ethers.utils.parseEther("50"),
-                    }
-                )
+                MEP1004Token.removeFromMEP1002Slot(1, testMEP1002TokenId, 0, {
+                    value: ethers.utils.parseEther("50"),
+                })
             ).to.emit(MEP1004Token, "RemoveFromMEP1002Slot");
             await expect(await MEP1004Token.getBalance()).to.be.equal(
                 ethers.utils.parseEther("50")
@@ -315,23 +283,17 @@ describe("MEP1004Token", function () {
             ).to.ok;
             await MEP1004Token.mint(owner.address, testSNCode);
 
-            await MEP1004Token.insertToMEP1002Slot(
-                testSNCodeTokenId,
-                testMEP1002TokenId,
-                0
-            );
+            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0);
 
             await expect(
                 MEP1004Token.removeFromMEP1002SlotAdmin(
-                    testSNCodeTokenId,
+                    1,
                     testMEP1002TokenId,
                     0
                 )
             ).to.emit(MEP1004Token, "RemoveFromMEP1002Slot");
 
-            await expect(
-                await MEP1004Token.getStatus(testSNCodeTokenId)
-            ).to.equals(1);
+            await expect(await MEP1004Token.getStatus(1)).to.equals(1);
 
             await expect(
                 MEP1004Token.insertToMEP1002Slot(
@@ -373,12 +335,13 @@ describe("MEP1004Token", function () {
             await ethers.provider.send("evm_setNextBlockTimestamp", [now]);
             const tx = await MEP1004Token.LocationProofs(
                 testMEP1002TokenId,
-                [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                [1, testCodeTokenId1, testCodeTokenId2],
                 "test item"
             );
             await expect(tx).to.ok;
             const receipt = await tx.wait();
             const event = receipt.events?.at(0);
+            console.log(event);
             await expect(event?.event).to.equals("NewLocationProof");
         });
         it("should return latest Location Proof", async function () {
@@ -400,7 +363,7 @@ describe("MEP1004Token", function () {
             await ethers.provider.send("evm_setNextBlockTimestamp", [now]);
             const tx = await MEP1004Token.LocationProofs(
                 testMEP1002TokenId,
-                [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                [1, testCodeTokenId1, testCodeTokenId2],
                 "test item"
             );
             await expect(tx).to.ok;
@@ -409,7 +372,7 @@ describe("MEP1004Token", function () {
                 await MEP1004Token.latestLocationProofs("test item")
             ).to.deep.equals([
                 testMEP1002TokenId,
-                [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                [1, testCodeTokenId1, testCodeTokenId2],
                 "test item",
                 now,
             ]);
@@ -438,7 +401,7 @@ describe("MEP1004Token", function () {
                 promises.push(
                     MEP1004Token.LocationProofs(
                         testMEP1002TokenId,
-                        [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                        [1, testCodeTokenId1, testCodeTokenId2],
                         "test item"
                     )
                 );
@@ -461,7 +424,7 @@ describe("MEP1004Token", function () {
                 promises2.push(
                     MEP1004Token.LocationProofs(
                         testMEP1002TokenId,
-                        [testSNCodeTokenId, testCodeTokenId1, testCodeTokenId2],
+                        [1, testCodeTokenId1, testCodeTokenId2],
                         "test item"
                     )
                 );

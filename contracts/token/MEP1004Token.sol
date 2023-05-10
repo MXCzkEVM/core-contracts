@@ -20,6 +20,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Proxied} from "hardhat-deploy/solc_0.8/proxy/Proxied.sol";
 import {IMEP1004} from "./IMEP1004.sol";
 import {INameWrapper} from "../mns/wrapper/INameWrapper.sol";
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 
 
     error ERC721InvalidTokenId();
@@ -48,6 +49,9 @@ UUPSUpgradeable
     using AddressUpgradeable for address payable;
 
     using StringsUpgradeable for uint256;
+
+    using Counters for Counters.Counter;
+
 
     event InsertToMEP1002Slot(
         uint256 indexed MEP1002TokenId,
@@ -89,6 +93,10 @@ UUPSUpgradeable
 
     uint256 private _exitFee;
 
+    Counters.Counter private _tokenIds;
+
+    mapping(string => uint256) private _SNCodeTokenIds;
+
 
     function initialize(
         string memory name_,
@@ -109,8 +117,13 @@ UUPSUpgradeable
         if (bytes(_SNCode).length == 0) {
             revert ERC721TokenAlreadyMinted();
         }
-        uint256 tokenId = uint256(keccak256(bytes(_SNCode)));
-        if (_exists(tokenId)) {
+        uint256 tokenId = _tokenIds.current();
+        if (tokenId == 0) {
+            _tokenIds.increment();
+            tokenId = _tokenIds.current();
+        }
+        _tokenIds.increment();
+        if (_SNCodeTokenIds[_SNCode] != 0) {
             revert ERC721TokenAlreadyMinted();
         }
         if (getSNCodeType(_SNCode) == type(uint256).max) {
@@ -118,6 +131,7 @@ UUPSUpgradeable
         }
         _safeMint(to, tokenId);
         _SNCodes[tokenId] = _SNCode;
+        _SNCodeTokenIds[_SNCode] = tokenId;
     }
 
     function setBaseURI(string memory baseURI_) external onlyController {
@@ -215,6 +229,13 @@ UUPSUpgradeable
     */
     function getSNCode(uint256 _tokenId) external view returns (string memory) {
         return _SNCodes[_tokenId];
+    }
+
+    /*
+        * @dev Returns the tokenId of the encrypted S/N code.
+    */
+    function getTokenId(string memory _SNCode) external view returns (uint256) {
+        return _SNCodeTokenIds[_SNCode];
     }
 
     /**
@@ -450,6 +471,6 @@ UUPSUpgradeable
 
     }
 
-    uint256[39] private __gap;
+    uint256[37] private __gap;
 }
 

@@ -2,7 +2,7 @@ import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as log from "./log";
 import * as utils from "./utils";
-import { LPWAN } from "../typechain-types";
+import { LPWAN, MEP1004Token } from "../typechain-types";
 import { BigNumber, utils as ethersUtils } from "ethers";
 import { getNamedSigners } from "hardhat-deploy-ethers/internal/helpers";
 
@@ -32,45 +32,55 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
     const { ethers } = await hre;
     const { deployer } = await getNamedSigners(hre);
     const LPWAN = await ethers.getContract<LPWAN>("LPWAN");
+    const MEP1004 = await ethers.getContract<MEP1004Token>("MEP1004Token");
     const nonce = await deployer.getTransactionCount();
-    console.log(nonce.toString());
     let tranCount = 0;
+    const MEP1002TokenId = getRandomMEP1002TokenId();
+    // const M2XTestSNCode = getRandomM2XTestSNCode();
+    // const NEOTestSNCode1 = getRandomNEOTestSNCode();
+    // const NEOTestSNCode2 = getRandomNEOTestSNCode();
+    // const tx = await LPWAN.mintMEP1004Stations(
+    //     deployer.address,
+    //     M2XTestSNCode,
+    //     {
+    //         nonce: nonce,
+    //     }
+    // );
+    //
+    const RandomAssets = getRandomAssets();
+    // await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode1, {
+    //     nonce: nonce + 1,
+    // });
+    // await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode2, {
+    //     nonce: nonce + 2,
+    // });
+    // const M2XTestSNCodeTokenId = await MEP1004.getTokenId(M2XTestSNCode);
+    // const NEOTestSNCode1TokenId = await MEP1004.getTokenId(NEOTestSNCode1);
+    // const NEOTestSNCode2TokenId = await MEP1004.getTokenId(NEOTestSNCode2);
+    const M2XTestSNCodeTokenId = BigNumber.from(1);
+    const NEOTestSNCode1TokenId = BigNumber.from(2);
+    const NEOTestSNCode2TokenId = BigNumber.from(3);
+    const M2XTestSNCode = await MEP1004.getSNCode(1);
+    const NEOTestSNCode1 = await MEP1004.getSNCode(2);
+    const NEOTestSNCode2 = await MEP1004.getSNCode(3);
     try {
         while (true) {
-            const MEP1002TokenId = getRandomMEP1002TokenId();
-            const M2XTestSNCode = getRandomM2XTestSNCode();
-            const NEOTestSNCode1 = getRandomNEOTestSNCode();
-            const NEOTestSNCode2 = getRandomNEOTestSNCode();
-            const RandomAssets = getRandomAssets();
-            const tx = await LPWAN.mintMEP1004Stations(
-                deployer.address,
-                M2XTestSNCode,
+            await LPWAN.submitLocationProofs(
+                MEP1002TokenId,
+                [
+                    M2XTestSNCodeTokenId,
+                    NEOTestSNCode1TokenId,
+                    NEOTestSNCode2TokenId,
+                ],
+                RandomAssets,
                 {
                     nonce: nonce + tranCount,
                 }
             );
-            await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode1, {
-                nonce: nonce + tranCount + 1,
-            });
-            await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode2, {
-                nonce: nonce + tranCount + 2,
-            });
-            await LPWAN.submitLocationProofs(
-                MEP1002TokenId,
-                [
-                    stringToKeccak256Bn(M2XTestSNCode),
-                    stringToKeccak256Bn(NEOTestSNCode1),
-                    stringToKeccak256Bn(NEOTestSNCode2),
-                ],
-                RandomAssets,
-                {
-                    nonce: nonce + tranCount + 3,
-                }
-            );
-            tranCount += 4;
+            tranCount += 1;
             console.log(
                 `generated Proof:
-                    index: ${tranCount / 4}
+                    index: ${tranCount}
                     MEP1002TokenID: ${MEP1002TokenId.toString()}
                     M2X: ${M2XTestSNCode.toString()},
                     NEO1: ${NEOTestSNCode1.toString()},

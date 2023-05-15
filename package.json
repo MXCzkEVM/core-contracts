@@ -20,6 +20,7 @@
     "deployMEP1002Token": "pnpm hardhat deploy_MEP1002Token --network mxc_testnet",
     "generateMEP1002Token": "pnpm hardhat generate_MEP1002Token --network mxc_testnet --token-address 0x8DD0d6b0238c26C14946095181A6C9671970B7cA",
     "updateMEP1002Token": "pnpm hardhat update_MEP1002Token --network mxc_testnet",
+    "generateProof": "pnpm hardhat generate_MEP1004AndProofOfLocation --network mxc_testnet",
     "sizer": "pnpm hardhat size-contracts",
     "storage": "ts-node scripts/getStorage.ts"
   },

@@ -15,13 +15,12 @@ task("generate_MEP1002Token")
         const { chainId } = await hre.ethers.provider.getNetwork();
         const deployer = await utils.getDeployer(hre);
         log.debug(`network: ${network}`);
-        log.debug(`chainId: ${chainId}`);
         log.debug(`deployer: ${deployer}`);
         log.debug(`tokenAddress: ${args.tokenAddress}`);
 
         await execute(hre, args).catch((error) => {
             console.error(error);
-            process.exitCode = 1;
+            process.exitCode = 2;
         });
     });
 
@@ -61,9 +60,6 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
             await Promise.all(promises).then((res) => {
                 for (let i = 0; i < res.length; i++) {
                     const h3Index = h3.latLngToCell(
-                        parseFloat(res[i].nearest.latt),
-                        parseFloat(res[i].nearest.longt),
-                        7
                     );
                     promises2.push(
                         MEP1002Token.connect(signer).mint(

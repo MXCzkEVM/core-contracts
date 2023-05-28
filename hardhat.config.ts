@@ -16,6 +16,9 @@ import "./tasks";
 
 export const archivedDeploymentPath = "./deployments/archive";
 
+const PRIVATE_KEY_ADMIN: string = process.env.PRIVATE_KEY_ADMIN || ""
+const PRIVATE_KEY1: string = process.env.PRIVATE_KEY1 || ""
+
 let real_accounts = undefined;
 if (process.env.DEPLOYER_KEY) {
     real_accounts = [
@@ -61,6 +64,13 @@ const config: HardhatUserConfig = {
             chainId: 5167003,
             accounts: real_accounts,
             url: process.env.MXC_TESTNET_URL || "",
+        },
+        wannsee: {
+            url: "https://wannsee-rpc.mxc.com",
+            chainId: 5167003,
+            accounts: [PRIVATE_KEY_ADMIN, PRIVATE_KEY1],
+            // gasPrice: 6000000000000,
+            saveDeployments: true,
         },
     },
     namedAccounts: {

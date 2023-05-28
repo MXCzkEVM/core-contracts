@@ -21,9 +21,13 @@ ControllableUpgradeable
 
     address private _MEP1004Address;
 
-    constructor(address MEP1004Address_) initializer {
+    uint256[99] private __gap;
+
+    function initialize(
+        address MEP1004Address_
+    ) external initializer {
         _MEP1004Address = MEP1004Address_;
-        __Controllable_init(_msgSender());
+        __Controllable_init();
     }
 
     function mintMEP1004Stations(address _to, string memory _SNCode) external onlyController {
@@ -33,5 +37,8 @@ ControllableUpgradeable
     function submitLocationProofs(uint256 _MEP1002TokenId, uint256[] memory _MEP1004TokenIds, string memory _item) external onlyController {
         MEP1004Token(_MEP1004Address).LocationProofs(_MEP1002TokenId, _MEP1004TokenIds, _item);
     }
+}
 
+contract ProxiedLPWAN is Proxied, UUPSUpgradeable, LPWAN{
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

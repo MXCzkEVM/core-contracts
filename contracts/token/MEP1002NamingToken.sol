@@ -19,11 +19,9 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Proxied} from "hardhat-deploy/solc_0.8/proxy/Proxied.sol";
 
 contract MEP1002NamingToken is
-IMEP1002NamingToken,
-ERC721EnumerableUpgradeable,
 ControllableUpgradeable,
-Proxied,
-UUPSUpgradeable
+IMEP1002NamingToken,
+ERC721EnumerableUpgradeable
 {
     using StringsUpgradeable for uint256;
 
@@ -31,14 +29,9 @@ UUPSUpgradeable
 
     function initialize(
         string memory name_,
-        string memory symbol_,
-        address _admin
-    ) external proxied initializer {
-        __Controllable_init(_admin);
-        assembly {
-            sstore(0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103, _admin)
-        }
-        __UUPSUpgradeable_init();
+        string memory symbol_
+    ) external initializer {
+        __Controllable_init();
         __ERC721_init(name_, symbol_);
     }
 
@@ -54,7 +47,9 @@ UUPSUpgradeable
         return _baseUri;
     }
 
-    function _authorizeUpgrade(address) internal override onlyOwner {}
-
     uint256[49] private __gap;
+}
+
+contract ProxiedMEP1002NamingToken is Proxied, UUPSUpgradeable, MEP1002NamingToken {
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

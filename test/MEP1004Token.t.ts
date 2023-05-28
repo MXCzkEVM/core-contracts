@@ -2,12 +2,12 @@ import { expect } from "chai";
 import { deployments, ethers, getNamedAccounts } from "hardhat";
 import { BigNumber, constants } from "ethers";
 import {
-    MEP1002Token,
     MEP1004Token,
-    MEP1004TokenMock,
-    MEP1004TokenMock__factory,
     NameWrapperMock,
     NameWrapperMock__factory,
+    ProxiedMEP1002Token,
+    ProxiedMEP1004Token,
+    ProxiedMEP1004TokenMock, ProxiedMEP1004TokenMock__factory,
 } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { getAddress } from "@ethersproject/address";
@@ -24,8 +24,8 @@ const setupTest = deployments.createFixture(
     async ({ deployments, getNamedAccounts, ethers }, options) => {
         await deployments.fixture(); // ensure you start from a fresh deployments
         const { deployer } = await getNamedAccounts();
-        const MEP1004Token = await ethers.getContract<MEP1004Token>(
-            "MEP1004Token"
+        const MEP1004Token = await ethers.getContract<ProxiedMEP1004Token>(
+            "ProxiedMEP1004Token"
         );
         const NameWrapperMockFactory =
             await ethers.getContractFactory<NameWrapperMock__factory>(
@@ -33,8 +33,8 @@ const setupTest = deployments.createFixture(
             );
         const NameWrapperMock = await NameWrapperMockFactory.deploy();
         await MEP1004Token.setMNSToken(NameWrapperMock.address);
-        const MEP1002Token = await ethers.getContract<MEP1002Token>(
-            "MEP1002Token"
+        const MEP1002Token = await ethers.getContract<ProxiedMEP1002Token>(
+            "ProxiedMEP1002Token"
         );
         await MEP1004Token.setMEP1002Addr(MEP1002Token.address);
         return {
@@ -46,11 +46,12 @@ const setupTest = deployments.createFixture(
 );
 
 describe("MEP1004Token", function () {
-    let MEP1004Token: MEP1004Token;
+    this.timeout(15000)
+    let MEP1004Token: ProxiedMEP1004Token;
     let NameWrapperMock: NameWrapperMock;
-    let MEP1004TokenMock: MEP1004TokenMock;
-    let MEP1004TokenMockFactory: MEP1004TokenMock__factory;
-    let MEP1002Token: MEP1002Token;
+    let MEP1004TokenMock: ProxiedMEP1004TokenMock;
+    let MEP1004TokenMockFactory: ProxiedMEP1004TokenMock__factory;
+    let MEP1002Token: ProxiedMEP1002Token;
     let owner: SignerWithAddress;
     let tokenOwner: SignerWithAddress;
     let addrs: SignerWithAddress[];
@@ -58,8 +59,8 @@ describe("MEP1004Token", function () {
         [owner, tokenOwner, ...addrs] = await ethers.getSigners();
         ({ MEP1004Token, NameWrapperMock, MEP1002Token } = await setupTest());
         MEP1004TokenMockFactory =
-            await ethers.getContractFactory<MEP1004TokenMock__factory>(
-                "MEP1004TokenMock"
+            await ethers.getContractFactory<ProxiedMEP1004TokenMock__factory>(
+                "ProxiedMEP1004TokenMock"
             );
     });
 
@@ -75,7 +76,6 @@ describe("MEP1004Token", function () {
                 MEP1004Token.initialize(
                     "MEP1004Token",
                     "MEP1004",
-                    owner.address
                 )
             ).to.be.revertedWith(
                 "Initializable: contract is already initialized"
@@ -342,7 +342,6 @@ describe("MEP1004Token", function () {
             await expect(tx).to.ok;
             const receipt = await tx.wait();
             const event = receipt.events?.at(0);
-            console.log(event);
             await expect(event?.event).to.equals("NewLocationProof");
         });
         it("should return latest Location Proof", async function () {

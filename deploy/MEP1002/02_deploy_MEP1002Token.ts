@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { MEP1002NamingToken, MEP1002Token } from "../../typechain-types";
+import {MEP1002NamingToken, MEP1002Token, ProxiedMEP1002NamingToken, ProxiedMEP1002Token} from "../../typechain-types";
 import { getAddress } from "@ethersproject/address";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -9,11 +9,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const MEP1002NamingToken = await ethers.getContract<MEP1002NamingToken>(
-        "MEP1002NamingToken"
+    const ProxiedMEP1002NamingToken = await ethers.getContract<ProxiedMEP1002NamingToken>(
+        "ProxiedMEP1002NamingToken"
     );
 
-    const tx = await deploy("MEP1002Token", {
+    const tx = await deploy("ProxiedMEP1002Token", {
         from: deployer,
         proxy: {
             owner: deployer,
@@ -22,23 +22,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 init: {
                     methodName: "initialize",
                     args: [
-                        "MEP1002Hexagon",
+                        "MEP1002 Hexagon Token",
                         "MEP1002",
-                        MEP1002NamingToken.address,
-                        deployer,
+                        ProxiedMEP1002NamingToken.address
                     ],
                 },
-            },
+            }
         },
         args: [],
         log: true,
     });
     if (tx.newlyDeployed) {
-        const MEP1002Token = await ethers.getContract<MEP1002Token>(
-            "MEP1002Token"
+        const ProxiedMEP1002Token = await ethers.getContract<ProxiedMEP1002Token>(
+            "ProxiedMEP1002Token"
         );
-        await MEP1002NamingToken.setController(MEP1002Token.address, true);
-        await MEP1002Token.setMNSToken(
+        await ProxiedMEP1002NamingToken.setController(ProxiedMEP1002Token.address, true);
+        await ProxiedMEP1002Token.setController(deployer, true);
+        await ProxiedMEP1002Token.setMNSToken(
             "0x61C48101ccE16653573e80c64b4bD4a4C3111Ce8"
         );
         const ownerStorage = await ethers.provider.getStorageAt(

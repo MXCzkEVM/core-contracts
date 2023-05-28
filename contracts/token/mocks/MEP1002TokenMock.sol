@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.18;
 
-import {MEP1002Token} from "../MEP1002Token.sol";
+import {ProxiedMEP1002Token} from "../MEP1002Token.sol";
 
 //Minimal public implementation of IRMRKNestable for testing.
-contract MEP1002TokenMock is MEP1002Token {
+contract ProxiedMEP1002TokenMock is ProxiedMEP1002Token {
     function additionalFunction() external view onlyController returns (uint256) {
         return totalSupply();
     }

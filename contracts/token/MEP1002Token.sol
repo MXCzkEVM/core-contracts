@@ -93,14 +93,12 @@ import {H3Library} from "../libs/H3Library.sol";
  */
 
 contract MEP1002Token is
+ControllableUpgradeable,
 IMEP1002,
 IERC6059,
 IERC721EnumerableUpgradeable,
 IERC721MetadataUpgradeable,
-ERC721Holder,
-ControllableUpgradeable,
-Proxied,
-UUPSUpgradeable
+ERC721Holder
 {
     using Counters for Counters.Counter;
     using AddressUpgradeable for address;
@@ -108,9 +106,6 @@ UUPSUpgradeable
     using H3Library for uint256;
 
     uint256 private constant _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP = 100;
-
-    bytes32 private constant _MXC_NODE =
-    0xc0ae3fe48f09fde4a60d1b2e3f2c5d1f8dd5922c3ab88ca76377c5fd10816e49;
 
     // Mapping owner address to token count
     mapping(address => uint256) private _balances;
@@ -164,14 +159,9 @@ UUPSUpgradeable
     function initialize(
         string memory name_,
         string memory symbol_,
-        address namingTokenAddr,
-        address _admin
-    ) external proxied initializer {
-        __Controllable_init(_admin);
-        assembly {
-            sstore(0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103, _admin)
-        }
-        __UUPSUpgradeable_init();
+        address namingTokenAddr
+    ) external initializer {
+        __Controllable_init();
         __MEP1002_init(name_, symbol_);
         _namingToken = namingTokenAddr;
     }
@@ -249,8 +239,6 @@ UUPSUpgradeable
         _requireMinted(tokenId);
         return tokenId;
     }
-
-    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /**
      * @dev See {IERC165-supportsInterface}.
@@ -621,7 +609,7 @@ UUPSUpgradeable
         address targetContract,
         uint256 targetId
     ) private view {
-        for (uint256 i; i < 100;) {
+        for (uint256 i; i < _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP;) {
             (
             address nextOwner,
             uint256 nextOwnerTokenId,
@@ -1739,6 +1727,10 @@ UUPSUpgradeable
     }
 
 
-    uint256[34] private __gap;
+    uint256[35] private __gap;
 
+}
+
+contract ProxiedMEP1002Token is Proxied, UUPSUpgradeable, MEP1002Token {
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

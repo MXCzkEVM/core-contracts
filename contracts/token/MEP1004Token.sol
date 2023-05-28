@@ -38,13 +38,10 @@ import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
     error InsufficientFee();
 
 contract MEP1004Token is
-IMEP1004,
-ERC721EnumerableUpgradeable,
 ControllableUpgradeable,
-Proxied,
-UUPSUpgradeable
+IMEP1004,
+ERC721EnumerableUpgradeable
 {
-
 
     using AddressUpgradeable for address payable;
 
@@ -100,16 +97,11 @@ UUPSUpgradeable
 
     function initialize(
         string memory name_,
-        string memory symbol_,
-        address _admin
-    ) external proxied initializer {
-        __Controllable_init(_admin);
-        assembly {
-            sstore(0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103, _admin)
-        }
+        string memory symbol_
+    ) external initializer {
+        __Controllable_init();
         _slotLimits = [10, 50];
         _exitFee = 50 ether;
-        __UUPSUpgradeable_init();
         __ERC721_init(name_, symbol_);
     }
 
@@ -176,8 +168,6 @@ UUPSUpgradeable
             SNCodeType
         );
     }
-
-    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     function _baseURI() internal view override returns (string memory) {
         return _baseUri;
@@ -476,3 +466,6 @@ UUPSUpgradeable
     uint256[37] private __gap;
 }
 
+contract ProxiedMEP1004Token is Proxied, UUPSUpgradeable, MEP1004Token {
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+}

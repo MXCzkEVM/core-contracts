@@ -55,7 +55,15 @@ const config: HardhatUserConfig = {
     networks: {
         hardhat: {
             tags: ["test", "upgrade"],
+            chainId: 5167003,
             gas: 8000000,
+            accounts: [{
+                privateKey: PRIVATE_KEY_ADMIN,
+                balance: "10000000000000000000000",
+            }, {
+                privateKey: PRIVATE_KEY1,
+                balance: "10000000000000000000000"
+            }],
             saveDeployments: true,
             allowUnlimitedContractSize: true,
         },

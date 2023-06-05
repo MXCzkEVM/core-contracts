@@ -16,16 +16,11 @@ import "./tasks";
 
 export const archivedDeploymentPath = "./deployments/archive";
 
-const PRIVATE_KEY_ADMIN: string = process.env.PRIVATE_KEY_ADMIN || ""
-const PRIVATE_KEY1: string = process.env.PRIVATE_KEY1 || ""
-
-let real_accounts = undefined;
-if (process.env.DEPLOYER_KEY) {
-    real_accounts = [
-        process.env.DEPLOYER_KEY,
-        process.env.OWNER_KEY || process.env.DEPLOYER_KEY,
-    ];
-}
+const real_accounts = [
+    process.env.DEPLOYER_KEY,
+    process.env.OWNER_KEY || process.env.DEPLOYER_KEY,
+    process.env.PRIVATE_KEY_NOPERMISSION || process.env.PRIVATE_KEY,
+] as string[]
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -55,6 +50,7 @@ const config: HardhatUserConfig = {
     networks: {
         hardhat: {
             tags: ["test", "upgrade"],
+            chainId: 5167003,
             gas: 8000000,
             saveDeployments: true,
             allowUnlimitedContractSize: true,
@@ -68,18 +64,15 @@ const config: HardhatUserConfig = {
         wannsee: {
             url: "https://wannsee-rpc.mxc.com",
             chainId: 5167003,
-            accounts: [PRIVATE_KEY_ADMIN, PRIVATE_KEY1],
+            accounts: real_accounts,
             // gasPrice: 6000000000000,
             saveDeployments: true,
         },
     },
     namedAccounts: {
-        deployer: {
-            default: 0,
-        },
-        owner: {
-            default: 0,
-        },
+        deployer: 0,
+        owner: 1,
+        nopermission: 2
     },
     etherscan: {
         apiKey: {

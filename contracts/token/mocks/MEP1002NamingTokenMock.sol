@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.18;
 
-import {MEP1002NamingToken} from "../MEP1002NamingToken.sol";
+import {ProxiedMEP1002NamingToken} from "../MEP1002NamingToken.sol";
 import {console} from "hardhat/console.sol";
 //Minimal public implementation of IRMRKNestable for testing.
-contract MEP1002NamingTokenMock is MEP1002NamingToken {
+contract ProxiedMEP1002NamingTokenMock is ProxiedMEP1002NamingToken {
 
 
     function additionalFunction() external view onlyController returns (uint256) {

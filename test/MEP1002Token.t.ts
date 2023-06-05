@@ -3,13 +3,12 @@ import { deployments, ethers, getNamedAccounts } from "hardhat";
 import { BigNumber, constants } from "ethers";
 import {
     MEP1002NamingToken,
-    MEP1002NamingTokenMock,
-    MEP1002NamingTokenMock__factory,
     MEP1002Token,
-    MEP1002TokenMock,
-    MEP1002TokenMock__factory,
     NameWrapperMock,
-    NameWrapperMock__factory,
+    NameWrapperMock__factory, ProxiedMEP1002NamingToken,
+    ProxiedMEP1002NamingTokenMock,
+    ProxiedMEP1002NamingTokenMock__factory, ProxiedMEP1002Token,
+    ProxiedMEP1002TokenMock, ProxiedMEP1002TokenMock__factory,
 } from "../typechain-types";
 import * as h3 from "h3-js";
 import { H3Index, isValidCell } from "h3-js";
@@ -27,11 +26,11 @@ const setupTest = deployments.createFixture(
     async ({ deployments, getNamedAccounts, ethers }, options) => {
         await deployments.fixture(); // ensure you start from a fresh deployments
         const { deployer } = await getNamedAccounts();
-        const MEP1002NamingToken = await ethers.getContract<MEP1002NamingToken>(
-            "MEP1002NamingToken"
+        const MEP1002NamingToken = await ethers.getContract<ProxiedMEP1002NamingToken>(
+            "ProxiedMEP1002NamingToken"
         );
-        const MEP1002Token = await ethers.getContract<MEP1002Token>(
-            "MEP1002Token"
+        const MEP1002Token = await ethers.getContract<ProxiedMEP1002Token>(
+            "ProxiedMEP1002Token"
         );
         const NameWrapperMockFactory =
             await ethers.getContractFactory<NameWrapperMock__factory>(
@@ -49,12 +48,13 @@ const setupTest = deployments.createFixture(
 );
 
 describe("MEP1002Token", function () {
-    let MEP1002Token: MEP1002Token;
-    let MEP1002NamingToken: MEP1002NamingToken;
-    let MEP1002TokenMock: MEP1002TokenMock;
-    let MEP1002NamingTokenMock: MEP1002NamingTokenMock;
-    let MEP1002NamingTokenMockFactory: MEP1002NamingTokenMock__factory;
-    let MEP1002TokenMockFactory: MEP1002TokenMock__factory;
+    this.timeout(15000)
+    let MEP1002Token: ProxiedMEP1002Token;
+    let MEP1002NamingToken: ProxiedMEP1002NamingToken;
+    let MEP1002TokenMock: ProxiedMEP1002TokenMock;
+    let MEP1002NamingTokenMock: ProxiedMEP1002NamingTokenMock;
+    let MEP1002NamingTokenMockFactory: ProxiedMEP1002NamingTokenMock__factory;
+    let MEP1002TokenMockFactory: ProxiedMEP1002TokenMock__factory;
     let NameWrapperMock: NameWrapperMock;
     let owner: SignerWithAddress;
     let tokenOwner: SignerWithAddress;
@@ -64,12 +64,12 @@ describe("MEP1002Token", function () {
         ({ MEP1002Token, MEP1002NamingToken, NameWrapperMock } =
             await setupTest());
         MEP1002NamingTokenMockFactory =
-            await ethers.getContractFactory<MEP1002NamingTokenMock__factory>(
-                "MEP1002NamingTokenMock"
+            await ethers.getContractFactory<ProxiedMEP1002NamingTokenMock__factory>(
+                "ProxiedMEP1002NamingTokenMock"
             );
         MEP1002TokenMockFactory =
-            await ethers.getContractFactory<MEP1002TokenMock__factory>(
-                "MEP1002TokenMock"
+            await ethers.getContractFactory<ProxiedMEP1002TokenMock__factory>(
+                "ProxiedMEP1002TokenMock"
             );
     });
 
@@ -115,7 +115,6 @@ describe("MEP1002Token", function () {
                     "MEP1002Token",
                     "MEP1002",
                     MEP1002Token.address,
-                    owner.address
                 )
             ).to.be.revertedWith(
                 "Initializable: contract is already initialized"
@@ -127,7 +126,6 @@ describe("MEP1002Token", function () {
                     "MEP1002NamingToken",
                     "MEP1002NT",
                     MEP1002NamingToken.address,
-                    owner.address
                 )
             ).to.be.revertedWith(
                 "Initializable: contract is already initialized"
@@ -385,7 +383,7 @@ describe("MEP1002Token", function () {
             await expect(await MEP1002Token.mint(h3IndexRes7Big)).to.ok;
             await expect(await MEP1002TokenMock.totalSupply()).to.equal(1);
             await expect(await MEP1002TokenMock.name()).to.equal(
-                "MEP1002Token"
+                "MEP1002 Hexagon"
             );
 
             const newImple = await MEP1002TokenMockFactory.deploy();
@@ -456,7 +454,7 @@ describe("MEP1002Token", function () {
                 1
             );
             await expect(await MEP1002NamingTokenMock.name()).to.equal(
-                "MEP1002NamingToken"
+                "MEP1002 Hexagon Naming Token"
             );
 
             const newImple = await MEP1002NamingTokenMockFactory.deploy();

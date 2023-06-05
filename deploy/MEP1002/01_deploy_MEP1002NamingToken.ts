@@ -8,7 +8,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { getNamedAccounts, deployments, ethers } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
-    const tx = await deploy("MEP1002NamingToken", {
+    const tx = await deploy("ProxiedMEP1002NamingToken", {
         from: deployer,
         proxy: {
             owner: deployer,
@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             execute: {
                 init: {
                     methodName: "initialize",
-                    args: ["MEP1002HexagonNamingToken", "MEP1002NT", deployer],
+                    args: ["MEP1002 Hexagon Naming Token", "MEP1002NT"],
                 },
             },
         },
@@ -29,7 +29,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
     const currentOwner = getAddress(`0x${ownerStorage.substr(-40)}`);
     console.log("currentOwner", currentOwner);
-    console.log(`Deployed MEP1002NamingToken to ${tx.address}`);
+    console.log(`Deployed ProxiedMEP1002NamingToken to ${tx.address}`);
 };
 
 func.tags = ["MEP1002"];

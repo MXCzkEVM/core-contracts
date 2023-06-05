@@ -18,15 +18,14 @@ contract ControllableUpgradeable is OwnableUpgradeable {
         _;
     }
 
-    function setController(address controller, bool enabled) public onlyController {
+    function setController(address controller, bool enabled) public onlyOwner {
         controllers[controller] = enabled;
         emit ControllerChanged(controller, enabled);
     }
 
-    function __Controllable_init(address _admin) public onlyInitializing {
+    function __Controllable_init() public onlyInitializing {
+        controllers[msg.sender] = true;
         __Ownable_init();
-        controllers[_admin] = true;
-        emit ControllerChanged(_admin, true);
     }
 
     /**
@@ -35,10 +34,10 @@ contract ControllableUpgradeable is OwnableUpgradeable {
      */
     function transferOwnership(address newOwner) public override onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
-        _transferOwnership(newOwner);
         assembly {
             sstore(0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103, newOwner)
         }
+        _transferOwnership(newOwner);
     }
 
 }

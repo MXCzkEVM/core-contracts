@@ -146,6 +146,10 @@ async function decode(hre: any, type: any, data: any) {
     return hre.ethers.utils.defaultAbiCoder.decode([type], data).toString();
 }
 
+async function sleep(ms: number) {
+    await new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export {
     deployContract,
     compileYulContract,
@@ -156,4 +160,5 @@ export {
     saveDeployments,
     getDeployments,
     decode,
+    sleep
 };

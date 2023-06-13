@@ -35,21 +35,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         from: deployer.address,
         log: true,
     });
-    const proxyFactory = await getTransparentUpgradeableProxyFactory(hre, deployer)
-    const proxy = proxyFactory.attach(proxyAddress);
-    await proxy.upgradeTo(LPWANDeployTx.address);
+    if (LPWANDeployTx.newlyDeployed) {
+        const proxyFactory = await getTransparentUpgradeableProxyFactory(hre, deployer)
+        const proxy = proxyFactory.attach(proxyAddress);
+        await proxy.upgradeTo(LPWANDeployTx.address);
 
-    const ProxiedLPWANFactory = await ethers.getContractFactory<ProxiedLPWAN__factory>("ProxiedLPWAN")
 
-    const ProxiedMEP1004Token = await ethers.getContract<ProxiedMEP1004Token>("ProxiedMEP1004Token");
+        const ProxiedLPWANFactory = await ethers.getContractFactory<ProxiedLPWAN__factory>("ProxiedLPWAN")
 
-    await (await ProxiedLPWANFactory.attach(proxyAddress).connect(owner)).initialize(ProxiedMEP1004Token.address)
+        const ProxiedMEP1004Token = await ethers.getContract<ProxiedMEP1004Token>("ProxiedMEP1004Token");
 
-    await deployments.save("ProxiedLPWAN", {
-        address: proxyAddress,
-        implementation: LPWANDeployTx.address,
-        abi: LPWANDeployTx.abi
-    })
+        await ProxiedMEP1004Token.setController(proxyAddress,true);
+
+        await (await ProxiedLPWANFactory.attach(proxyAddress).connect(owner)).initialize(ProxiedMEP1004Token.address)
+
+        await deployments.save("ProxiedLPWAN", {
+            address: proxyAddress,
+            implementation: LPWANDeployTx.address,
+            abi: LPWANDeployTx.abi
+        })
+    }
+
     console.log(ownerStorage,deployer.address);
 
 };

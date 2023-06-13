@@ -2,7 +2,7 @@ import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as log from "./log";
 import * as utils from "./utils";
-import { LPWAN, MEP1004Token } from "../typechain-types";
+import {LPWAN, MEP1004Token, ProxiedLPWAN, ProxiedMEP1002Token, ProxiedMEP1004Token} from "../typechain-types";
 import { BigNumber, utils as ethersUtils } from "ethers";
 import { getNamedSigners } from "hardhat-deploy-ethers/internal/helpers";
 
@@ -29,9 +29,12 @@ function sleep(ms: number) {
 
 export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
   const { ethers } = await hre;
-  const { deployer } = await getNamedSigners(hre);
-  const LPWAN = await ethers.getContract<LPWAN>("LPWAN");
-  const MEP1004 = await ethers.getContract<MEP1004Token>("MEP1004Token");
+  const { deployer,owner } = await getNamedSigners(hre);
+  console.log(deployer.address,owner.address)
+  const LPWAN = await ethers.getContract<ProxiedLPWAN>("ProxiedLPWAN",owner);
+  const MEP1002 = await ethers.getContract<ProxiedMEP1002Token>("ProxiedMEP1002Token");
+
+  const MEP1004 = await ethers.getContract<ProxiedMEP1004Token>("ProxiedMEP1004Token");
 
   const MEP1002TokenIds = [
     BigNumber.from("608530350842314751"), //  podgorica edcon2023.mxc   nft 2
@@ -53,24 +56,37 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
     [MEP1002TokenIds[2].toString()]: ["3"],
     [MEP1002TokenIds[3].toString()]: ["4"]
   };
-  // const tx = await LPWAN.mintMEP1004Stations(
-  //     deployer.address,
-  //     M2XTestSNCode,
-  //     {
-  //         nonce: nonce,
-  //     }
-  // );
-  //
-  // await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode1, {
-  //     nonce: nonce + 1,
-  // });
-  // await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode2, {
-  //     nonce: nonce + 2,
-  // });
-  // const M2XTestSNCodeTokenId = await MEP1004.getTokenId(M2XTestSNCode);
-  // const NEOTestSNCode1TokenId = await MEP1004.getTokenId(NEOTestSNCode1);
-  // const NEOTestSNCode2TokenId = await MEP1004.getTokenId(NEOTestSNCode2);
+
+  const nonce = await owner.getTransactionCount();
   let tranCount = 0;
+  //
+  for (let i = 0; i < MEP1002TokenIds.length; i++) {
+    // const fee = await owner.getFeeData();
+    //
+    // const M2XTestSNCode = getRandomM2XTestSNCode();
+    // const NEOTestSNCode1 = getRandomNEOTestSNCode();
+    // const NEOTestSNCode2 = getRandomNEOTestSNCode();
+    // const tx = await LPWAN.mintMEP1004Stations(
+    //     "0x45A83F015D0265800CBC0dACe1c430E724D49cAc",
+    //     M2XTestSNCode,
+    //     {
+    //       nonce: nonce + tranCount,
+    //       gasPrice: fee.gasPrice?.mul(200).div(100)
+    //     }
+    // );
+    // await LPWAN.mintMEP1004Stations("0x45A83F015D0265800CBC0dACe1c430E724D49cAc", NEOTestSNCode1, {
+    //   nonce: nonce + tranCount + 1,
+    //   gasPrice: fee.gasPrice?.mul(200).div(100)
+    //
+    // });
+    // await LPWAN.mintMEP1004Stations("0x45A83F015D0265800CBC0dACe1c430E724D49cAc", NEOTestSNCode2, {
+    //   nonce: nonce + tranCount + 2,
+    //   gasPrice: fee.gasPrice?.mul(200).div(100)
+    // });
+    // tranCount+=3
+  }
+
+
   while (true) {
     try {
       for (let i = 0; i < MEP1002TokenIds.length; i++) {
@@ -78,6 +94,8 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
         const assets = NftAssets[MEP1002TokenId.toString()];
 
         for (let asset of assets) {
+            const fee = await owner.getFeeData();
+
           const tx = await LPWAN.submitLocationProofs(
             MEP1002TokenId,
             [
@@ -85,7 +103,10 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
               MEP1004TokenIds[MEP1002TokenId.toString()][1],
               MEP1004TokenIds[MEP1002TokenId.toString()][2]
             ],
-            asset
+            asset,
+              {
+                gasPrice: fee.gasPrice?.mul(110).div(100),
+              }
           );
           await tx.wait(1);
           tranCount += 1;

@@ -22,6 +22,8 @@ const real_accounts = [
     process.env.PRIVATE_KEY_NOPERMISSION || process.env.PRIVATE_KEY,
 ] as string[]
 
+type HttpNetworkAccountsUserConfig = /*unresolved*/ any
+
 const config: HardhatUserConfig = {
     solidity: {
         settings: {
@@ -58,13 +60,15 @@ const config: HardhatUserConfig = {
         mxc_testnet: {
             saveDeployments: true,
             chainId: 5167003,
-            accounts: real_accounts,
+            // accounts: real_accounts,
+            accounts: [process.env.DEPLOYER_KEY] as HttpNetworkAccountsUserConfig | undefined,
             url: process.env.MXC_TESTNET_URL || "",
         },
         wannsee: {
             url: "https://wannsee-rpc.mxc.com",
             chainId: 5167003,
-            accounts: real_accounts,
+            // accounts: real_accounts,
+            accounts: [process.env.DEPLOYER_KEY] as HttpNetworkAccountsUserConfig | undefined,
             // gasPrice: 6000000000000,
             saveDeployments: true,
         },

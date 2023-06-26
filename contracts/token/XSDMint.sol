@@ -18,12 +18,7 @@ error XSDMint__IllegalAmount();
 error XSDMint__NFTNotExist();
 error XSDMint__XSDNotEnough();
 
-contract XSDMintV1 is
-    Initializable,
-    ERC20Upgradeable,
-    UUPSUpgradeable,
-    IERC721Receiver
-{
+contract XSDMintV1 is Initializable, ERC20Upgradeable, UUPSUpgradeable, IERC721Receiver {
     address public owner;
     uint256[2] public rate = [8, 2];
     mapping(ERC721 => bool) public s_aceeptNft;
@@ -38,6 +33,7 @@ contract XSDMintV1 is
         ERC721 collection;
         uint256 token_id;
     }
+
     struct Erc20Tokens {
         ERC20 token;
         uint256 amount;
@@ -51,9 +47,7 @@ contract XSDMintV1 is
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function initialize(address initialOwner) public initializer {
         __ERC20_init("XSD", "XSD");
@@ -63,11 +57,7 @@ contract XSDMintV1 is
     }
 
     // only exit in test
-    function initNFTPrice(
-        ERC721 collection,
-        uint256 token_id,
-        uint256 price
-    ) public onlyOwner {
+    function initNFTPrice(ERC721 collection, uint256 token_id, uint256 price) public onlyOwner {
         s_nftPrice[collection][token_id] = price;
     }
 
@@ -79,21 +69,20 @@ contract XSDMintV1 is
         rate = _rate;
     }
 
-    function modifyCollateral(
-        ERC721[] calldata nftAddr,
-        ERC20[] calldata erc20Addr,
-        bool addOrRemove
-    ) public onlyOwner {
+    function modifyCollateral(ERC721[] calldata nftAddr, ERC20[] calldata erc20Addr, bool addOrRemove)
+        public
+        onlyOwner
+    {
         uint256 nft_length = nftAddr.length;
         uint256 erc20_length = erc20Addr.length;
 
-        for (uint256 i; i < nft_length; ) {
+        for (uint256 i; i < nft_length;) {
             s_aceeptNft[nftAddr[i]] = addOrRemove;
             unchecked {
                 ++i;
             }
         }
-        for (uint256 i; i < erc20_length; ) {
+        for (uint256 i; i < erc20_length;) {
             s_aceeptToken[erc20Addr[i]] = addOrRemove;
             unchecked {
                 ++i;
@@ -101,10 +90,7 @@ contract XSDMintV1 is
         }
     }
 
-    function XSDMint(
-        NftTokens[] calldata nftTokens,
-        Erc20Tokens[] calldata erc20Tokens
-    ) public {
+    function XSDMint(NftTokens[] calldata nftTokens, Erc20Tokens[] calldata erc20Tokens) public {
         if (nftTokens.length == 0 || erc20Tokens.length == 0) {
             revert XSDMint__AtLeastOne();
         }
@@ -114,7 +100,7 @@ contract XSDMintV1 is
 
         uint256 nftVal = 0;
         uint256 tokenVal = 0;
-        for (uint256 i; i < nft_length; ) {
+        for (uint256 i; i < nft_length;) {
             ERC721 collection = nftTokens[i].collection;
             uint256 token_id = nftTokens[i].token_id;
 
@@ -134,7 +120,7 @@ contract XSDMintV1 is
             }
         }
 
-        for (uint256 i; i < erc20_length; ) {
+        for (uint256 i; i < erc20_length;) {
             ERC20 token = erc20Tokens[i].token;
             uint256 amount = erc20Tokens[i].amount;
 
@@ -165,10 +151,7 @@ contract XSDMintV1 is
         _mint(msg.sender, xsdMintAmount);
     }
 
-    function XSDBurn(
-        NftTokens[] calldata nftTokens,
-        Erc20Tokens[] calldata erc20Tokens
-    ) public {
+    function XSDBurn(NftTokens[] calldata nftTokens, Erc20Tokens[] calldata erc20Tokens) public {
         if (nftTokens.length == 0 || erc20Tokens.length == 0) {
             revert XSDMint__AtLeastOne();
         }
@@ -178,7 +161,7 @@ contract XSDMintV1 is
 
         uint256 nftVal = 0;
         uint256 tokenVal = 0;
-        for (uint256 i; i < nft_length; ) {
+        for (uint256 i; i < nft_length;) {
             ERC721 collection = nftTokens[i].collection;
             uint256 token_id = nftTokens[i].token_id;
 
@@ -198,7 +181,7 @@ contract XSDMintV1 is
             }
         }
 
-        for (uint256 i; i < erc20_length; ) {
+        for (uint256 i; i < erc20_length;) {
             ERC20 token = erc20Tokens[i].token;
             uint256 amount = erc20Tokens[i].amount;
 
@@ -233,10 +216,7 @@ contract XSDMintV1 is
         _burn(msg.sender, xsdBurnAmount);
     }
 
-    function checkRatio(
-        uint256 nftv,
-        uint256 tokenv
-    ) public view returns (bool) {
+    function checkRatio(uint256 nftv, uint256 tokenv) public view returns (bool) {
         uint256 nftvs = nftv * rate[1];
         uint256 tokenvs = tokenv * rate[0];
         uint256 bigger = nftvs > tokenvs ? nftvs : tokenvs;
@@ -248,12 +228,12 @@ contract XSDMintV1 is
         }
     }
 
-    function onERC721Received(
-        address /*operator*/,
-        address /*from*/,
-        uint /*tokenId*/,
-        bytes calldata /*data*/
-    ) external pure override returns (bytes4) {
+    function onERC721Received(address, /*operator*/ address, /*from*/ uint256, /*tokenId*/ bytes calldata /*data*/ )
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         return IERC721Receiver.onERC721Received.selector;
     }
 }

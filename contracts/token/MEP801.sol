@@ -18,7 +18,7 @@ contract ISOApplication is IMEP801 {
      */
     constructor() {
         owner = msg.sender;
-        emit ContractDeployed(address(this));
+        emit MEP801Deployed(address(this));
     }
 
     // Custom Errors
@@ -30,7 +30,7 @@ contract ISOApplication is IMEP801 {
      * Emits an {ApplicationCreated} event indicating the created application.
      */
     function createApplication(string memory _name) external {
-        if(bytes(applicationName).length > 0) {
+        if (bytes(applicationName).length > 0) {
             revert APPLICATION_CREATED_ALREADY();
         }
 
@@ -43,7 +43,7 @@ contract ISOApplication is IMEP801 {
      * Emits an {ApplicationCreated} event indicating the created application.
      */
     function changeOwner(address _newOwner) external {
-        if(owner != msg.sender) {
+        if (owner != msg.sender) {
             revert ONLY_OWNER();
         }
 

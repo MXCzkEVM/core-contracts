@@ -17,9 +17,10 @@ import "./tasks";
 export const archivedDeploymentPath = "./deployments/archive";
 
 const real_accounts = [
-    process.env.DEPLOYER_KEY,
-    process.env.OWNER_KEY || process.env.DEPLOYER_KEY,
-    process.env.PRIVATE_KEY_NOPERMISSION || process.env.PRIVATE_KEY,
+    process.env.DEPLOYER_KEY || "",
+    process.env.OTHER_ACCOUNT || "",
+    process.env.OWNER_KEY || process.env.DEPLOYER_KEY || "",
+    process.env.PRIVATE_KEY_NOPERMISSION || process.env.PRIVATE_KEY || "",
 ] as string[]
 
 type HttpNetworkAccountsUserConfig = /*unresolved*/ any
@@ -61,6 +62,7 @@ const config: HardhatUserConfig = {
             saveDeployments: true,
             chainId: 5167003,
             // accounts: real_accounts,
+            gas: 6000000,
             accounts: [process.env.DEPLOYER_KEY] as HttpNetworkAccountsUserConfig | undefined,
             url: process.env.MXC_TESTNET_URL || "",
         },

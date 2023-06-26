@@ -10,7 +10,7 @@ contract UUPSProxy is ERC1967Proxy {
         address _admin, // This is completely unused by the uups proxy, required to remain compatible with hardhat deploy: https://github.com/wighawag/hardhat-deploy/issues/146
         bytes memory _data
     ) payable ERC1967Proxy(_logic, _data) {
-        if(_admin == address(0)) {
+        if (_admin == address(0)) {
             _admin = msg.sender;
         }
         assembly {

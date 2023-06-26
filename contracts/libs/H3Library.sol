@@ -78,10 +78,7 @@ library H3Library {
         return ((h3 & H3_RES_MASK) >> H3_RES_OFFSET);
     }
 
-    function cellToParent(
-        uint256 h3Index,
-        uint256 parentRes
-    ) internal pure returns (uint256) {
+    function cellToParent(uint256 h3Index, uint256 parentRes) internal pure returns (uint256) {
         uint256 childRes = getResolution(h3Index);
         if (parentRes < 0 || parentRes > MAX_H3_RES) {
             return 0;
@@ -101,23 +98,12 @@ library H3Library {
         return parentH;
     }
 
-    function h3SetIndexDigit(
-        uint256 h3Index,
-        uint256 res,
-        uint256 digit
-    ) internal pure returns (uint256) {
-        return
-            (h3Index &
-                ~(
-                    (H3_DIGIT_MASK <<
-                        ((MAX_H3_RES - (res)) * H3_PER_DIGIT_OFFSET))
-                )) | ((digit << (MAX_H3_RES - res)) * H3_PER_DIGIT_OFFSET);
+    function h3SetIndexDigit(uint256 h3Index, uint256 res, uint256 digit) internal pure returns (uint256) {
+        return (h3Index & ~((H3_DIGIT_MASK << ((MAX_H3_RES - (res)) * H3_PER_DIGIT_OFFSET))))
+            | ((digit << (MAX_H3_RES - res)) * H3_PER_DIGIT_OFFSET);
     }
 
-    function h3SetResolution(
-        uint256 h3Index,
-        uint256 parentRes
-    ) internal pure returns (uint256) {
+    function h3SetResolution(uint256 h3Index, uint256 parentRes) internal pure returns (uint256) {
         return (h3Index & H3_RES_MASK_NEGATIVE) | (parentRes << H3_RES_OFFSET);
     }
 
@@ -137,17 +123,11 @@ library H3Library {
         return (h3 & H3_BC_MASK) >> H3_BC_OFFSET;
     }
 
-    function getIndexDigit(
-        uint256 h3,
-        uint256 res
-    ) internal pure returns (uint256) {
-        return
-            (h3 >> ((MAX_H3_RES - res) * H3_PER_DIGIT_OFFSET)) & H3_DIGIT_MASK;
+    function getIndexDigit(uint256 h3, uint256 res) internal pure returns (uint256) {
+        return (h3 >> ((MAX_H3_RES - res) * H3_PER_DIGIT_OFFSET)) & H3_DIGIT_MASK;
     }
 
-    function _isBaseCellPentagon(
-        uint256 baseCell
-    ) internal pure returns (bool) {
+    function _isBaseCellPentagon(uint256 baseCell) internal pure returns (bool) {
         if (baseCell < 0 || baseCell >= NUM_BASE_CELLS) {
             return false;
         }

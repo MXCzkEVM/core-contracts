@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-/// @title IMEP-01 ISO Application Contract
+/// @title IMEP-801 ISO Application Contract
 interface IMEP801 {
     /// @dev This event gets emitted when the ISO contract is deployed.
     ///  The parameters is the address of the contract deployed
-    event ContractDeployed(address indexed _address);
+    event MEP801Deployed(address indexed _address);
 
     /// @dev This event gets emitted when a new application is created.
     ///  The parameters is the application name
@@ -13,7 +13,7 @@ interface IMEP801 {
 
     /// @dev This event gets emitted when the owner of the contract is updated.
     ///  The parameters is the address of the new owner and the time the action was performed.
-    event OwnerChanged(address indexed _newOwner, uint indexed _time);
+    event OwnerChanged(address indexed _newOwner, uint256 indexed _time);
 
     /// @notice Creates a new ISO application
     /// @param _name The name of the application

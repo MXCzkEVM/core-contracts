@@ -24,13 +24,7 @@ uint32 constant PARENT_CONTROLLED_FUSES = 0xFFFF0000;
 uint32 constant USER_SETTABLE_FUSES = 0xFFFDFFFF;
 
 interface INameWrapper is IERC1155 {
-    event NameWrapped(
-        bytes32 indexed node,
-        bytes name,
-        address owner,
-        uint32 fuses,
-        uint64 expiry
-    );
+    event NameWrapped(bytes32 indexed node, bytes name, address owner, uint32 fuses, uint64 expiry);
 
     event NameUnwrapped(bytes32 indexed node, address owner);
 
@@ -51,18 +45,11 @@ interface INameWrapper is IERC1155 {
 
     function supportsInterface(bytes4 interfaceID) external view returns (bool);
 
-    function wrap(
-        bytes calldata name,
-        address wrappedOwner,
-        address resolver
-    ) external;
+    function wrap(bytes calldata name, address wrappedOwner, address resolver) external;
 
-    function wrapETH2LD(
-        string calldata label,
-        address wrappedOwner,
-        uint16 ownerControlledFuses,
-        address resolver
-    ) external returns (uint64 expires);
+    function wrapETH2LD(string calldata label, address wrappedOwner, uint16 ownerControlledFuses, address resolver)
+        external
+        returns (uint64 expires);
 
     function registerAndWrapETH2LD(
         string calldata label,
@@ -72,32 +59,17 @@ interface INameWrapper is IERC1155 {
         uint16 ownerControlledFuses
     ) external returns (uint256 registrarExpiry);
 
-    function renew(
-        uint256 labelHash,
-        uint256 duration
-    ) external returns (uint256 expires);
+    function renew(uint256 labelHash, uint256 duration) external returns (uint256 expires);
 
     function unwrap(bytes32 node, bytes32 label, address owner) external;
 
-    function unwrapETH2LD(
-        bytes32 label,
-        address newRegistrant,
-        address newController
-    ) external;
+    function unwrapETH2LD(bytes32 label, address newRegistrant, address newController) external;
 
     function upgrade(bytes calldata name, bytes calldata extraData) external;
 
-    function setFuses(
-        bytes32 node,
-        uint16 ownerControlledFuses
-    ) external returns (uint32 newFuses);
+    function setFuses(bytes32 node, uint16 ownerControlledFuses) external returns (uint32 newFuses);
 
-    function setChildFuses(
-        bytes32 parentNode,
-        bytes32 labelhash,
-        uint32 fuses,
-        uint64 expiry
-    ) external;
+    function setChildFuses(bytes32 parentNode, bytes32 labelhash, uint32 fuses, uint64 expiry) external;
 
     function setSubnodeRecord(
         bytes32 node,
@@ -109,31 +81,15 @@ interface INameWrapper is IERC1155 {
         uint64 expiry
     ) external returns (bytes32);
 
-    function setRecord(
-        bytes32 node,
-        address owner,
-        address resolver,
-        uint64 ttl
-    ) external;
+    function setRecord(bytes32 node, address owner, address resolver, uint64 ttl) external;
 
-    function setSubnodeOwner(
-        bytes32 node,
-        string calldata label,
-        address newOwner,
-        uint32 fuses,
-        uint64 expiry
-    ) external returns (bytes32);
+    function setSubnodeOwner(bytes32 node, string calldata label, address newOwner, uint32 fuses, uint64 expiry)
+        external
+        returns (bytes32);
 
-    function extendExpiry(
-        bytes32 node,
-        bytes32 labelhash,
-        uint64 expiry
-    ) external returns (uint64);
+    function extendExpiry(bytes32 node, bytes32 labelhash, uint64 expiry) external returns (uint64);
 
-    function canModifyName(
-        bytes32 node,
-        address addr
-    ) external view returns (bool);
+    function canModifyName(bytes32 node, address addr) external view returns (bool);
 
     function setResolver(bytes32 node, address resolver) external;
 
@@ -145,9 +101,7 @@ interface INameWrapper is IERC1155 {
 
     function getApproved(uint256 tokenId) external view returns (address);
 
-    function getData(
-        uint256 id
-    ) external view returns (address, uint32, uint64);
+    function getData(uint256 id) external view returns (address, uint32, uint64);
 
     function setMetadataService(IMetadataService _metadataService) external;
 
@@ -155,10 +109,7 @@ interface INameWrapper is IERC1155 {
 
     function setUpgradeContract(INameWrapperUpgrade _upgradeAddress) external;
 
-    function allFusesBurned(
-        bytes32 node,
-        uint32 fuseMask
-    ) external view returns (bool);
+    function allFusesBurned(bytes32 node, uint32 fuseMask) external view returns (bool);
 
     function isWrapped(bytes32) external view returns (bool);
 

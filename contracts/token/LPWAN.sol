@@ -1,31 +1,20 @@
 pragma solidity ^0.8.18;
 
-import {
-StringsUpgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
-import {
-UUPSUpgradeable
-} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {
-AddressUpgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 import {ControllableUpgradeable} from "../common/ControllableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Proxied} from "hardhat-deploy/solc_0.8/proxy/Proxied.sol";
 import {MEP1004Token} from "./MEP1004Token.sol";
 
-contract LPWAN is
-ControllableUpgradeable
-{
-
+contract LPWAN is ControllableUpgradeable {
     address private _MEP1004Address;
 
     uint256[99] private __gap;
 
-    function initialize(
-        address MEP1004Address_
-    ) external initializer {
+    function initialize(address MEP1004Address_) external initializer {
         _MEP1004Address = MEP1004Address_;
         __Controllable_init();
     }
@@ -34,11 +23,14 @@ ControllableUpgradeable
         MEP1004Token(_MEP1004Address).mint(_to, _SNCode);
     }
 
-    function submitLocationProofs(uint256 _MEP1002TokenId, uint256[] memory _MEP1004TokenIds, string memory _item) external onlyController {
+    function submitLocationProofs(uint256 _MEP1002TokenId, uint256[] memory _MEP1004TokenIds, string memory _item)
+        external
+        onlyController
+    {
         MEP1004Token(_MEP1004Address).LocationProofs(_MEP1002TokenId, _MEP1004TokenIds, _item);
     }
 }
 
-contract ProxiedLPWAN is Proxied, UUPSUpgradeable, LPWAN{
+contract ProxiedLPWAN is Proxied, UUPSUpgradeable, LPWAN {
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

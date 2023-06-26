@@ -45,6 +45,7 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
     error INSUFFICIENT_AMOUNT();
     error COMMITMENT_HASH_DOES_NOT_MATCH();
     error ADDRESS_ZERO();
+    error WRONG_APPLICATION_ADDRESS();
 
     /**
      * @notice Constructor function to initialize a new `ProvisioningContract` instance.
@@ -90,6 +91,10 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
      * Emits an {PIDProduced} event indicating the produced PID.
      */
     function producePID(string memory _email, uint256 _amount, address _applicationContractAddress) external {
+        if(_applicationContractAddress != applicationContractAddress) {
+            revert WRONG_APPLICATION_ADDRESS();
+        }
+        
         idPID++;
 
         ProducePID storage produce = producingPID[idPID];
@@ -121,11 +126,11 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
 
         pIDHashToTokenId[_pIDHash] = tokenId;
 
-        payable(address(0)).transfer(_amountPaid);
-
         _myCounter.increment();
         _safeMint(_buyer, tokenId);
         _setTokenURI(tokenId, _tokenURI);
+
+        payable(address(0)).transfer(_amountPaid); // the amount paid is transfered to address zero
 
         emit SensorNFTMinted(tokenId, _pIDHash);
     }
@@ -142,7 +147,7 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
     }
 
     /**
-     * @dev See {IMEP-802 -> claimDevice}
+     * @dev See {IMEP-802 -> claimSensorNFT}
      * Emits an {SensorNFTClaimed} event indicating a claimed device.
      */
     function claimSensorNFT(bytes32 _pID) external payable nonReentrant {
@@ -165,15 +170,11 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
             revert COMMITMENT_HASH_DOES_NOT_MATCH();
         }
 
-        // users will have to send the exact amount of value in the mapping to the contract
-        // sensor.expirationBlock = block.number + blockFee[msg.value];
+        // token owner will change in the mapping
         sensor.tokenOwner = _claimer;
 
-        payable(address(0)).transfer(_amountPaid);
-
         safeTransferFrom(tokenOwner, _claimer, tokenId);
-
-        // payable(owner).transfer(msg.value);
+        payable(address(0)).transfer(_amountPaid); // the amount paid is transfered to address zero
 
         emit SensorNFTClaimed(tokenId, bytes32(_pID), _claimer);
     }
@@ -197,11 +198,12 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
 
         require(_exists(tokenId), "ERC721: invalid token ID");
 
-        payable(address(0)).transfer(_amountPaid); // the amount paid is transfered to address zero
 
         Sensor storage sensor = sensorNFT[tokenId];
         sensor.amountPaid = _amountPaid;
         sensor.expirationBlock = block.number + blockFee[_amountPaid];
+
+        payable(address(0)).transfer(_amountPaid); // the amount paid is transfered to address zero
 
         emit SensorNFTRenewed(tokenId, _amountPaid, _renewer);
     }
@@ -213,28 +215,5 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
         Sensor storage sensor = sensorNFT[_tokenId];
 
         return sensor.expirationBlock > block.number;
-    }
-
-    event FundsTransferred(address indexed _recipient, uint256 indexed _amount);
-
-    function transferFunds(address payable _recipient) external returns (bool) {
-        if (msg.sender != owner) {
-            revert ONLY_OWNER();
-        }
-        if (_recipient == address(0)) {
-            revert ADDRESS_ZERO();
-        }
-
-        uint256 contractBalance = address(this).balance;
-
-        bool transferStatus = _recipient.send(contractBalance);
-
-        if (transferStatus) {
-            emit FundsTransferred(_recipient, contractBalance);
-            return true;
-        } else {
-            // Restore the contract balance in case the transfer failed
-            return false;
-        }
     }
 }

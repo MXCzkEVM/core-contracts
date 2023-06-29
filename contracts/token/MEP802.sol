@@ -36,14 +36,12 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
 
     mapping(uint256 => ProducePID) public producingPID;
     mapping(uint256 => Sensor) public sensorNFT;
-    mapping(address => bytes32) commitments;
     mapping(uint256 => uint256) public blockFee;
     mapping(bytes32 => uint256) private pIDHashToTokenId;
 
     // Custom Errors
     error ONLY_OWNER();
     error INSUFFICIENT_AMOUNT();
-    error COMMITMENT_HASH_DOES_NOT_MATCH();
     error ADDRESS_ZERO();
     error WRONG_APPLICATION_ADDRESS();
 
@@ -91,10 +89,10 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
      * Emits an {PIDProduced} event indicating the produced PID.
      */
     function producePID(string memory _email, uint256 _amount, address _applicationContractAddress) external {
-        if(_applicationContractAddress != applicationContractAddress) {
+        if (_applicationContractAddress != applicationContractAddress) {
             revert WRONG_APPLICATION_ADDRESS();
         }
-        
+
         idPID++;
 
         ProducePID storage produce = producingPID[idPID];
@@ -105,7 +103,7 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
     }
 
     /**
-     * @dev See {IMEP-802 -> provisionDevice}
+     * @dev See {IMEP-802 -> mintSensorNFT}
      * Emits an {SensorNFTMinted} event indicating the sensor NFT minted.
      */
     function mintSensorNFT(bytes32 _pIDHash, string memory _tokenURI) external payable nonReentrant {
@@ -136,47 +134,22 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
     }
 
     /**
-     * @dev this method encodes the _pIDHash and msg.sender and store it in a commitments mapping.
-     * @param _pID Hash of the PID: keccak256(PID)
-     */
-    function commit(bytes32 _pID) external {
-        bytes32 commitHash = keccak256(abi.encodePacked(_pID, msg.sender));
-
-        // store msg.sender to _pIDHash commitment mapping
-        commitments[msg.sender] = commitHash;
-    }
-
-    /**
      * @dev See {IMEP-802 -> claimSensorNFT}
      * Emits an {SensorNFTClaimed} event indicating a claimed device.
      */
-    function claimSensorNFT(bytes32 _pID) external payable nonReentrant {
+    function claimSensorNFT(bytes32 _pIDHash) external payable nonReentrant {
         uint256 _amountPaid = msg.value;
         address _claimer = msg.sender;
-
-        bytes32 _pIDHash = keccak256(abi.encodePacked(_pID));
-
         uint256 tokenId = pIDHashToTokenId[_pIDHash];
-        // require(tokenId != 0, "NFT not found for the given pID");
-
-        Sensor storage sensor = sensorNFT[tokenId];
-
         address tokenOwner = ownerOf(tokenId);
-
-        bytes32 commitment = commitments[_claimer];
-        bytes32 commitHash = keccak256(abi.encodePacked(_pID, _claimer));
-
-        if (commitment != commitHash) {
-            revert COMMITMENT_HASH_DOES_NOT_MATCH();
-        }
-
-        // token owner will change in the mapping
-        sensor.tokenOwner = _claimer;
+        
+        Sensor storage sensor = sensorNFT[tokenId];
+        sensor.tokenOwner = _claimer; // token owner will change in the mapping
 
         safeTransferFrom(tokenOwner, _claimer, tokenId);
         payable(address(0)).transfer(_amountPaid); // the amount paid is transfered to address zero
 
-        emit SensorNFTClaimed(tokenId, bytes32(_pID), _claimer);
+        emit SensorNFTClaimed(tokenId, _pIDHash, _claimer);
     }
 
     /**
@@ -197,7 +170,6 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
         }
 
         require(_exists(tokenId), "ERC721: invalid token ID");
-
 
         Sensor storage sensor = sensorNFT[tokenId];
         sensor.amountPaid = _amountPaid;

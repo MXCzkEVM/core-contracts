@@ -17,8 +17,8 @@ interface IMEP802 {
     event SensorNFTMinted(uint256 indexed _tokenID, bytes32 indexed _pIDHash);
 
     /// @dev This event gets emitted when a sensor NFT is claimed.
-    ///  The parameters are tokenID, pID, and address of the claimer
-    event SensorNFTClaimed(uint256 indexed tokenId, bytes32 indexed _pID, address indexed claimer);
+    ///  The parameters are tokenID, _pIDHash, and address of the claimer
+    event SensorNFTClaimed(uint256 indexed tokenId, bytes32 indexed _pIDHash, address indexed claimer);
 
     /// @dev This event gets emitted when a sensor NFT is renewed.
     ///  The parameters are tokenID, amount paid, and address of the renewer

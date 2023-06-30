@@ -62,7 +62,7 @@ const config: HardhatUserConfig = {
             url: process.env.MXC_TESTNET_URL || "",
         },
         wannsee: {
-            url: "https://wannsee-rpc.mxc.com",
+            url: "http://207.246.99.8:8545",
             chainId: 5167003,
             accounts: real_accounts,
             // gasPrice: 6000000000000,

@@ -57,7 +57,6 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
     [MEP1002TokenIds[3].toString()]: ["4"]
   };
 
-  const nonce = await owner.getTransactionCount();
   let tranCount = 0;
   //
   for (let i = 0; i < MEP1002TokenIds.length; i++) {
@@ -95,30 +94,32 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
 
         for (let asset of assets) {
             const fee = await owner.getFeeData();
-
-          const tx = await LPWAN.submitLocationProofs(
-            MEP1002TokenId,
-            [
-              MEP1004TokenIds[MEP1002TokenId.toString()][0],
-              MEP1004TokenIds[MEP1002TokenId.toString()][1],
-              MEP1004TokenIds[MEP1002TokenId.toString()][2]
-            ],
-            asset,
-              {
-                gasPrice: fee.gasPrice?.mul(110).div(100),
-              }
-          );
-          await tx.wait(1);
-          tranCount += 1;
-          console.log(
-            `generated Proof:
-                      index: ${tranCount}
-                      MEP1002TokenID: ${MEP1002TokenId.toString()}
-                      MEP1004Station_1: ${MEP1004TokenIds[MEP1002TokenId.toString()][0]},
-                      MEP1004Station_2: ${MEP1004TokenIds[MEP1002TokenId.toString()][1]},
-                      MEP1004Station_3: ${MEP1004TokenIds[MEP1002TokenId.toString()][2]},
-                      NftAsset: ${asset}`
-          );
+            const nonce = await owner.getTransactionCount();
+            console.log("nonce",owner.address,nonce.toString())
+            const tx = await LPWAN.submitLocationProofs(
+              MEP1002TokenId,
+              [
+                MEP1004TokenIds[MEP1002TokenId.toString()][0],
+                MEP1004TokenIds[MEP1002TokenId.toString()][1],
+                MEP1004TokenIds[MEP1002TokenId.toString()][2]
+              ],
+              asset,
+                {
+                  nonce: nonce,
+                  gasPrice: fee.gasPrice?.mul(110).div(100),
+                }
+            );
+            await tx.wait(1);
+            tranCount += 1;
+            console.log(
+              `generated Proof:
+                        index: ${tranCount}
+                        MEP1002TokenID: ${MEP1002TokenId.toString()}
+                        MEP1004Station_1: ${MEP1004TokenIds[MEP1002TokenId.toString()][0]},
+                        MEP1004Station_2: ${MEP1004TokenIds[MEP1002TokenId.toString()][1]},
+                        MEP1004Station_3: ${MEP1004TokenIds[MEP1002TokenId.toString()][2]},
+                        NftAsset: ${asset}`
+            );
         }
       }
       await sleep(600000);

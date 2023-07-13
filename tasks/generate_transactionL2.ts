@@ -19,10 +19,10 @@ export async function generateTransactionL2(hre: HardhatRuntimeEnvironment) {
         value: 1,
         nonce: nonce
       });
-      await sleep(1000);
+      await sleep(500);
     } catch (e) {
       console.log(e);
-      await sleep(1000)
+      await sleep(500)
     }
   }
 }

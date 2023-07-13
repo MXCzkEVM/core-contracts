@@ -39,4 +39,15 @@ describe("LPWAN", function () {
           .ok;
     });
   })
+  describe("syncProvenRewardEvent", async function() {
+    it('should not revert', function () {
+      // await expect(await LPWANContract.syncProvenRewardEvent([{
+      //   account: undefined,
+      //   amount: undefined,
+      //   cost: undefined,
+      //   rewardHeight: undefined
+      // }]))
+    });
+  })
 });
+

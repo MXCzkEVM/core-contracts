@@ -49,17 +49,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await ProxiedMEP1004Token.setController(proxyAddress,true);
 
-        // const ProxiedLPWANFactory = await ethers.getContractFactory<ProxiedLPWAN__factory>("ProxiedLPWAN")
+        const ProxiedLPWANFactory = await ethers.getContractFactory<ProxiedLPWAN__factory>("ProxiedLPWAN")
 
-        // const ProxiedEthMxcPriceAggregator = await ethers.getContract<ProxiedEthMxcPriceAggregator>("ProxiedEthMxcPriceAggregator");
+        const ProxiedEthMxcPriceAggregator = await ethers.getContract<ProxiedEthMxcPriceAggregator>("ProxiedEthMxcPriceAggregator");
 
-        // const LPWAN = (await ProxiedLPWANFactory.attach(proxyAddress).connect(owner))
+        const LPWAN = (await ProxiedLPWANFactory.attach(proxyAddress).connect(owner))
 
-        //relayer permission
-        // const tx = await LPWAN.setController("0x45CD149025038242ca37BDe03B3d176590CA6013", true);
-        // await tx.wait()
+        let tx = await LPWAN.setController("0x3AAEd79670c79f1f7E0A3Fa66118c6D9003B1Ab0", true)
+        await tx.wait();
         // initialize
-        // await LPWAN.initialize(ProxiedMEP1004Token.address, ProxiedEthMxcPriceAggregator.address);
+        await LPWAN.initialize(ProxiedMEP1004Token.address, ProxiedEthMxcPriceAggregator.address);
         await deployments.save("ProxiedLPWAN", {
             address: proxyAddress,
             implementation: LPWANDeployTx.address,

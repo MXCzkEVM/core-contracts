@@ -13,9 +13,7 @@ contract Create2Factory is Initializable {
         address contractAddress;
         assembly {
             contractAddress := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
-            if iszero(extcodesize(contractAddress)) {
-                revert(0, 0)
-            }
+            if iszero(extcodesize(contractAddress)) { revert(0, 0) }
         }
         emit ContractCreated(contractAddress);
         return contractAddress;

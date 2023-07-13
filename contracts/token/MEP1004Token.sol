@@ -1,19 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {
-ERC721EnumerableUpgradeable
-} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {ERC721EnumerableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {
-StringsUpgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
-import {
-UUPSUpgradeable
-} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {
-AddressUpgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 import {ControllableUpgradeable} from "../common/ControllableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -22,46 +15,33 @@ import {IMEP1004} from "./IMEP1004.sol";
 import {INameWrapper} from "../mns/wrapper/INameWrapper.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 
+error ERC721InvalidTokenId();
+error ERC721NotApprovedOrOwner();
+error ERC721TokenAlreadyMinted();
+error SNCodeNotAllow();
+error ProofProverLessThanRequired();
+error AlreadyInsertOtherSlot();
+error ExceedSlotLimit();
+error SlotAlreadyUsed();
+error NotCorrectSlotIndex();
+error StatusNotAllow();
+error NoDebt();
+error NoNamingPermission();
+error InsufficientFee();
 
-    error ERC721InvalidTokenId();
-    error ERC721NotApprovedOrOwner();
-    error ERC721TokenAlreadyMinted();
-    error SNCodeNotAllow();
-    error ProofProverLessThanRequired();
-    error AlreadyInsertOtherSlot();
-    error ExceedSlotLimit();
-    error SlotAlreadyUsed();
-    error NotCorrectSlotIndex();
-    error StatusNotAllow();
-    error NoDebt();
-    error NoNamingPermission();
-    error InsufficientFee();
-
-contract MEP1004Token is
-ControllableUpgradeable,
-IMEP1004,
-ERC721EnumerableUpgradeable
-{
-
+contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgradeable {
     using AddressUpgradeable for address payable;
 
     using StringsUpgradeable for uint256;
 
     using Counters for Counters.Counter;
 
-
     event InsertToMEP1002Slot(
-        uint256 indexed MEP1002TokenId,
-        uint256 indexed MEP1004TokenId,
-        uint256 indexed slotIndex,
-        uint256 SNCodeType
+        uint256 indexed MEP1002TokenId, uint256 indexed MEP1004TokenId, uint256 indexed slotIndex, uint256 SNCodeType
     );
 
     event RemoveFromMEP1002Slot(
-        uint256 indexed MEP1002TokenId,
-        uint256 indexed MEP1004TokenId,
-        uint256 indexed slotIndex,
-        uint256 SNCodeType
+        uint256 indexed MEP1002TokenId, uint256 indexed MEP1004TokenId, uint256 indexed slotIndex, uint256 SNCodeType
     );
 
     event MEP1004TokenUpdateName(uint256 indexed tokenId, string name);
@@ -94,11 +74,7 @@ ERC721EnumerableUpgradeable
 
     mapping(string => uint256) private _SNCodeTokenIds;
 
-
-    function initialize(
-        string memory name_,
-        string memory symbol_
-    ) external initializer {
+    function initialize(string memory name_, string memory symbol_) external initializer {
         __Controllable_init();
         _slotLimits = [10, 50];
         _exitFee = 50 ether;
@@ -150,7 +126,10 @@ ERC721EnumerableUpgradeable
         payable(_msgSender()).transfer(address(this).balance);
     }
 
-    function removeFromMEP1002SlotAdmin(uint256 _tokenId, uint256 _mep1002Id, uint256 _slotIndex) onlyController external {
+    function removeFromMEP1002SlotAdmin(uint256 _tokenId, uint256 _mep1002Id, uint256 _slotIndex)
+        external
+        onlyController
+    {
         uint256 SNCodeType = getSNCodeType(_SNCodes[_tokenId]);
         if (SNCodeType == type(uint256).max) {
             revert SNCodeNotAllow();
@@ -161,12 +140,7 @@ ERC721EnumerableUpgradeable
         _MEP1002Slot[_mep1002Id][SNCodeType][_slotIndex] = 0;
         _MEP1004Status[_tokenId] = 1;
         _whereSlot[_tokenId] = [0, 0, 0];
-        emit RemoveFromMEP1002Slot(
-            _mep1002Id,
-            _tokenId,
-            _slotIndex,
-            SNCodeType
-        );
+        emit RemoveFromMEP1002Slot(_mep1002Id, _tokenId, _slotIndex, SNCodeType);
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -176,23 +150,15 @@ ERC721EnumerableUpgradeable
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
-    function tokenURI(
-        uint256 _tokenId
-    ) public view virtual override returns (string memory) {
+    function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
         _requireMinted(_tokenId);
 
         string memory baseURI = _baseURI();
 
-        return bytes(baseURI).length > 0 ? string(
-            abi.encodePacked(
-                baseURI,
-                _tokenId.toString(),
-                "?name=",
-                _MEP1004TokenNames[_tokenId]
-            )
-        ) : "";
+        return bytes(baseURI).length > 0
+            ? string(abi.encodePacked(baseURI, _tokenId.toString(), "?name=", _MEP1004TokenNames[_tokenId]))
+            : "";
     }
-
 
     function tokenNames(uint256 _tokenId) external view returns (string memory) {
         return _MEP1004TokenNames[_tokenId];
@@ -229,7 +195,7 @@ ERC721EnumerableUpgradeable
     }
 
     /**
-    * @dev Returns the limit number of slots that can be inserted with the MEP1002 token.
+     * @dev Returns the limit number of slots that can be inserted with the MEP1002 token.
      */
     function slotLimits() external view returns (uint256[] memory) {
         return _slotLimits;
@@ -250,7 +216,6 @@ ERC721EnumerableUpgradeable
         return result;
     }
 
-
     function getExitFee() external view returns (uint256) {
         return _exitFee;
     }
@@ -263,17 +228,15 @@ ERC721EnumerableUpgradeable
         if (!_isApprovedOrOwner(_msgSender(), _tokenId)) {
             revert ERC721NotApprovedOrOwner();
         }
-        if (IERC721(_mnsToken).ownerOf(_nameWrapperTokenId) != _msgSender())
+        if (IERC721(_mnsToken).ownerOf(_nameWrapperTokenId) != _msgSender()) {
             revert NoNamingPermission();
+        }
         bytes memory newName = INameWrapper(_mnsToken).names(bytes32(_nameWrapperTokenId));
         if (bytes(newName).length == 0) {
             return;
         }
         _MEP1004TokenNames[_tokenId] = string(abi.encodePacked(newName));
-        emit MEP1004TokenUpdateName(
-            _tokenId,
-            _MEP1004TokenNames[_tokenId]
-        );
+        emit MEP1004TokenUpdateName(_tokenId, _MEP1004TokenNames[_tokenId]);
     }
 
     function resetName(uint256 _tokenId) external {
@@ -281,12 +244,8 @@ ERC721EnumerableUpgradeable
             revert ERC721NotApprovedOrOwner();
         }
         _MEP1004TokenNames[_tokenId] = "";
-        emit MEP1004TokenUpdateName(
-            _tokenId,
-            _MEP1004TokenNames[_tokenId]
-        );
+        emit MEP1004TokenUpdateName(_tokenId, _MEP1004TokenNames[_tokenId]);
     }
-
 
     /**
      * @dev Inserts the MEP1004 token to the specified slot within a MEP1002 token.
@@ -317,12 +276,7 @@ ERC721EnumerableUpgradeable
         checkStatus(_tokenId);
         _MEP1002Slot[_mep1002Id][SNCodeType][_slotIndex] = _tokenId;
         _whereSlot[_tokenId] = [_mep1002Id, SNCodeType, _slotIndex];
-        emit InsertToMEP1002Slot(
-            _mep1002Id,
-            _tokenId,
-            _slotIndex,
-            SNCodeType
-        );
+        emit InsertToMEP1002Slot(_mep1002Id, _tokenId, _slotIndex, SNCodeType);
     }
 
     /**
@@ -344,18 +298,16 @@ ERC721EnumerableUpgradeable
         }
         _MEP1002Slot[_mep1002Id][SNCodeType][_slotIndex] = 0;
         _whereSlot[_tokenId] = [0, 0, 0];
-        emit RemoveFromMEP1002Slot(
-            _mep1002Id,
-            _tokenId,
-            _slotIndex,
-            SNCodeType
-        );
+        emit RemoveFromMEP1002Slot(_mep1002Id, _tokenId, _slotIndex, SNCodeType);
     }
 
     /**
      * @dev Submit the location proofs of anything.
      */
-    function LocationProofs(uint256 _MEP1002TokenId, uint256[] memory _MEP1004TokenIds, string memory _item) onlyController external {
+    function LocationProofs(uint256 _MEP1002TokenId, uint256[] memory _MEP1004TokenIds, string memory _item)
+        external
+        onlyController
+    {
         if (IERC721(_MEP1002Addr).ownerOf(_MEP1002TokenId) != _MEP1002Addr) {
             revert ERC721InvalidTokenId();
         }
@@ -402,7 +354,11 @@ ERC721EnumerableUpgradeable
     /**
      * @dev get the recent location proofs of anything.
      */
-    function getLocationProofs(string memory _item, uint256 _index, uint256 _batchSize) external view returns (LocationProof[] memory) {
+    function getLocationProofs(string memory _item, uint256 _index, uint256 _batchSize)
+        external
+        view
+        returns (LocationProof[] memory)
+    {
         // length
         uint256 length = _batchSize;
         if (_index >= _locationProofs[_item].length) {
@@ -424,7 +380,6 @@ ERC721EnumerableUpgradeable
         return resultArr;
     }
 
-
     function getSNCodeType(string memory _str) internal pure returns (uint256) {
         bytes memory strBytes = bytes(_str);
         bytes memory m2xBytes = bytes("M2X");
@@ -443,8 +398,8 @@ ERC721EnumerableUpgradeable
 
     function indexOf(bytes memory _str, bytes memory _subStr) internal pure returns (uint256) {
         require(_subStr.length <= _str.length, "Cannot find a longer string in a shorter one");
-        uint i;
-        uint j;
+        uint256 i;
+        uint256 j;
         for (i = 0; i <= _str.length - _subStr.length; i++) {
             bool found = true;
             for (j = 0; j < _subStr.length; j++) {
@@ -460,7 +415,6 @@ ERC721EnumerableUpgradeable
 
         return type(uint256).max;
         // String does not contain substring
-
     }
 
     uint256[37] private __gap;

@@ -6,46 +6,23 @@ import {IMEP1002} from "./IMEP1002.sol";
 import {IERC6059} from "./IERC6059.sol";
 import {IMEP1002NamingToken} from "./IMEP1002NamingToken.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {
-ERC721Holder
-} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import {
-IERC721Receiver
-} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {
-IERC165Upgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
-import {
-IERC721Metadata
-} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
-import {
-IERC721MetadataUpgradeable
-} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
-import {
-IERC721EnumerableUpgradeable
-} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
-import {
-IERC721Upgradeable
-} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import {
-IERC721ReceiverUpgradeable
-} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
-import {
-AddressUpgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import {
-ContextUpgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
-import {
-StringsUpgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
-import {
-ERC165Upgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
-import {
-UUPSUpgradeable
-} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import {IERC721MetadataUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
+import {IERC721EnumerableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import {IERC721ReceiverUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
+import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ControllableUpgradeable} from "../common/ControllableUpgradeable.sol";
 import {INameWrapper} from "../mns/wrapper/INameWrapper.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
@@ -54,35 +31,35 @@ import {Proxied} from "hardhat-deploy/solc_0.8/proxy/Proxied.sol";
 import {H3Library} from "../libs/H3Library.sol";
 //import {Controllable} from "../common/Controllable.sol";
 
-    error ChildAlreadyExists();
-    error ChildIndexOutOfRange();
-    error ERC721AddressZeroIsNotaValidOwner();
-    error ERC721ApprovalToCurrentOwner();
-    error ERC721ApproveCallerIsNotOwnerNorApprovedForAll();
-    error ERC721ApproveToCaller();
-    error ERC721InvalidTokenId();
-    error ERC721MintToTheZeroAddress();
-    error ERC721NotApprovedOrOwner();
-    error ERC721TokenAlreadyMinted();
-    error ERC721TransferFromIncorrectOwner();
-    error ERC721TransferToNonReceiverImplementer();
-    error ERC721TransferToTheZeroAddress();
-    error IdZeroForbidden();
-    error IsNotContract();
-    error MaxPendingChildrenReached();
-    error MaxRecursiveBurnsReached(address childContract, uint256 childId);
-    error MintToNonNestableImplementer();
-    error NestableTooDeep();
-    error NestableTransferToDescendant();
-    error NestableTransferToNonNestableImplementer();
-    error NestableTransferToSelf();
-    error NotApprovedOrDirectOwner();
-    error PendingChildIndexOutOfRange();
-    error UnexpectedChildId();
-    error UnexpectedNumberOfChildren();
+error ChildAlreadyExists();
+error ChildIndexOutOfRange();
+error ERC721AddressZeroIsNotaValidOwner();
+error ERC721ApprovalToCurrentOwner();
+error ERC721ApproveCallerIsNotOwnerNorApprovedForAll();
+error ERC721ApproveToCaller();
+error ERC721InvalidTokenId();
+error ERC721MintToTheZeroAddress();
+error ERC721NotApprovedOrOwner();
+error ERC721TokenAlreadyMinted();
+error ERC721TransferFromIncorrectOwner();
+error ERC721TransferToNonReceiverImplementer();
+error ERC721TransferToTheZeroAddress();
+error IdZeroForbidden();
+error IsNotContract();
+error MaxPendingChildrenReached();
+error MaxRecursiveBurnsReached(address childContract, uint256 childId);
+error MintToNonNestableImplementer();
+error NestableTooDeep();
+error NestableTransferToDescendant();
+error NestableTransferToNonNestableImplementer();
+error NestableTransferToSelf();
+error NotApprovedOrDirectOwner();
+error PendingChildIndexOutOfRange();
+error UnexpectedChildId();
+error UnexpectedNumberOfChildren();
 
-    error InvalidGeolocation();
-    error NoNamingPermission();
+error InvalidGeolocation();
+error NoNamingPermission();
 
 /**
  * @title NestableToken
@@ -93,12 +70,12 @@ import {H3Library} from "../libs/H3Library.sol";
  */
 
 contract MEP1002Token is
-ControllableUpgradeable,
-IMEP1002,
-IERC6059,
-IERC721EnumerableUpgradeable,
-IERC721MetadataUpgradeable,
-ERC721Holder
+    ControllableUpgradeable,
+    IMEP1002,
+    IERC6059,
+    IERC721EnumerableUpgradeable,
+    IERC721MetadataUpgradeable,
+    ERC721Holder
 {
     using Counters for Counters.Counter;
     using AddressUpgradeable for address;
@@ -151,16 +128,9 @@ ERC721Holder
 
     address private _mnsToken;
 
-    event MEP1002TokenUpdateName(
-        uint256 indexed tokenId,
-        string name
-    );
+    event MEP1002TokenUpdateName(uint256 indexed tokenId, string name);
 
-    function initialize(
-        string memory name_,
-        string memory symbol_,
-        address namingTokenAddr
-    ) external initializer {
+    function initialize(string memory name_, string memory symbol_, address namingTokenAddr) external initializer {
         __Controllable_init();
         __MEP1002_init(name_, symbol_);
         _namingToken = namingTokenAddr;
@@ -200,39 +170,33 @@ ERC721Holder
         _safeMint(address(this), geolocation_);
         //        }
         IMEP1002NamingToken(_namingToken).mint(_msgSender(), geolocation_);
-        emit MEP1002TokenUpdateName(
-            geolocation_,
-            tokenNames[geolocation_]
-        );
+        emit MEP1002TokenUpdateName(geolocation_, tokenNames[geolocation_]);
     }
 
     function setName(uint256 geolocation_, uint256 nameWrapperTokenId) external {
         _requireMinted(geolocation_);
-        if (IERC721(_namingToken).ownerOf(geolocation_) != _msgSender())
+        if (IERC721(_namingToken).ownerOf(geolocation_) != _msgSender()) {
             revert NoNamingPermission();
-        if (INameWrapper(_mnsToken).ownerOf(nameWrapperTokenId) != _msgSender())
+        }
+        if (INameWrapper(_mnsToken).ownerOf(nameWrapperTokenId) != _msgSender()) {
             revert NoNamingPermission();
+        }
 
         bytes memory newName = INameWrapper(_mnsToken).names(bytes32(nameWrapperTokenId));
         if (keccak256(newName) == keccak256(abi.encodePacked(""))) {
             return;
         }
         tokenNames[geolocation_] = string(abi.encodePacked(newName));
-        emit MEP1002TokenUpdateName(
-            geolocation_,
-            tokenNames[geolocation_]
-        );
+        emit MEP1002TokenUpdateName(geolocation_, tokenNames[geolocation_]);
     }
 
     function resetName(uint256 geolocation_) external {
         _requireMinted(geolocation_);
-        if (IERC721(_namingToken).ownerOf(geolocation_) != _msgSender())
+        if (IERC721(_namingToken).ownerOf(geolocation_) != _msgSender()) {
             revert NoNamingPermission();
+        }
         tokenNames[geolocation_] = "";
-        emit MEP1002TokenUpdateName(
-            geolocation_,
-            tokenNames[geolocation_]
-        );
+        emit MEP1002TokenUpdateName(geolocation_, tokenNames[geolocation_]);
     }
 
     function geolocation(uint256 tokenId) external view returns (uint256) {
@@ -243,19 +207,9 @@ ERC721Holder
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    )
-    public
-    view
-    virtual
-    override(IERC165Upgradeable)
-    returns (bool)
-    {
-        return
-        interfaceId == type(IERC721Upgradeable).interfaceId ||
-        interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
-        interfaceId == type(IERC6059).interfaceId;
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165Upgradeable) returns (bool) {
+        return interfaceId == type(IERC721Upgradeable).interfaceId
+            || interfaceId == type(IERC721MetadataUpgradeable).interfaceId || interfaceId == type(IERC6059).interfaceId;
     }
 
     /**
@@ -301,37 +255,24 @@ ERC721Holder
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
-    function tokenURI(
-        uint256 tokenId
-    ) public view virtual override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         _requireMinted(tokenId);
 
         string memory baseURI = _baseURI();
 
-        return bytes(baseURI).length > 0 ? string(
-            abi.encodePacked(
-                baseURI,
-                tokenId.toString(),
-                "?name=",
-                tokenNames[tokenId]
-            )
-        ) : "";
+        return bytes(baseURI).length > 0
+            ? string(abi.encodePacked(baseURI, tokenId.toString(), "?name=", tokenNames[tokenId]))
+            : "";
     }
 
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
      */
-    function __MEP1002_init(
-        string memory name_,
-        string memory symbol_
-    ) internal onlyInitializing {
+    function __MEP1002_init(string memory name_, string memory symbol_) internal onlyInitializing {
         __MEP1002_init_unchained(name_, symbol_);
     }
 
-    function __MEP1002_init_unchained(
-        string memory name_,
-        string memory symbol_
-    ) internal onlyInitializing {
+    function __MEP1002_init_unchained(string memory name_, string memory symbol_) internal onlyInitializing {
         _name = name_;
         _symbol = symbol_;
     }
@@ -354,8 +295,9 @@ ERC721Holder
      * @param tokenId ID of the token to check
      */
     function _onlyApprovedOrOwner(uint256 tokenId) private view {
-        if (!_isApprovedOrOwner(_msgSender(), tokenId))
+        if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
             revert ERC721NotApprovedOrOwner();
+        }
     }
 
     /**
@@ -376,8 +318,9 @@ ERC721Holder
      * @param tokenId ID of the token to check.
      */
     function _onlyApprovedOrDirectOwner(uint256 tokenId) private view {
-        if (!_isApprovedOrDirectOwner(_msgSender(), tokenId))
+        if (!_isApprovedOrDirectOwner(_msgSender(), tokenId)) {
             revert NotApprovedOrDirectOwner();
+        }
     }
 
     /**
@@ -406,34 +349,29 @@ ERC721Holder
     /**
      * @inheritdoc IERC721Upgradeable
      */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public virtual onlyApprovedOrDirectOwner(tokenId) {
+    function transferFrom(address from, address to, uint256 tokenId)
+        public
+        virtual
+        onlyApprovedOrDirectOwner(tokenId)
+    {
         _transfer(from, to, tokenId);
     }
 
     /**
      * @inheritdoc IERC721Upgradeable
      */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public virtual {
+    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual {
         safeTransferFrom(from, to, tokenId, "");
     }
 
     /**
      * @inheritdoc IERC721Upgradeable
      */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
-    ) public virtual onlyApprovedOrDirectOwner(tokenId) {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data)
+        public
+        virtual
+        onlyApprovedOrDirectOwner(tokenId)
+    {
         _safeTransfer(from, to, tokenId, data);
     }
 
@@ -446,13 +384,11 @@ ERC721Holder
      * @param tokenId ID of the token being transferred
      * @param destinationId ID of the token to receive the token being transferred
      */
-    function nestTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 destinationId,
-        bytes memory data
-    ) public virtual onlyApprovedOrDirectOwner(tokenId) {
+    function nestTransferFrom(address from, address to, uint256 tokenId, uint256 destinationId, bytes memory data)
+        public
+        virtual
+        onlyApprovedOrDirectOwner(tokenId)
+    {
         _nestTransfer(from, to, tokenId, destinationId, data);
     }
 
@@ -474,15 +410,11 @@ ERC721Holder
      * @param tokenId ID of the token to transfer
      * @param data Additional data with no specified format, sent in call to `to`
      */
-    function _safeTransfer(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
-    ) internal virtual {
+    function _safeTransfer(address from, address to, uint256 tokenId, bytes memory data) internal virtual {
         _transfer(from, to, tokenId);
-        if (!_checkOnERC721Received(from, to, tokenId, data))
+        if (!_checkOnERC721Received(from, to, tokenId, data)) {
             revert ERC721TransferToNonReceiverImplementer();
+        }
     }
 
     /**
@@ -497,11 +429,7 @@ ERC721Holder
      * @param to Address to transfer the token to
      * @param tokenId ID of the token to transfer
      */
-    function _transfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual {
+    function _transfer(address from, address to, uint256 tokenId) internal virtual {
         (address immediateOwner, uint256 parentId,) = directOwnerOf(tokenId);
         if (immediateOwner != from) revert ERC721TransferFromIncorrectOwner();
         if (to == address(0)) revert ERC721TransferToTheZeroAddress();
@@ -530,34 +458,27 @@ ERC721Holder
      * @param destinationId ID of the token receiving the given token
      * @param data Additional data with no specified format, sent in the addChild call
      */
-    function _nestTransfer(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 destinationId,
-        bytes memory data
-    ) internal virtual {
+    function _nestTransfer(address from, address to, uint256 tokenId, uint256 destinationId, bytes memory data)
+        internal
+        virtual
+    {
         (address immediateOwner, uint256 parentId,) = directOwnerOf(tokenId);
         if (immediateOwner != from) revert ERC721TransferFromIncorrectOwner();
         if (to == address(0)) revert ERC721TransferToTheZeroAddress();
-        if (to == address(this) && tokenId == destinationId)
+        if (to == address(this) && tokenId == destinationId) {
             revert NestableTransferToSelf();
+        }
 
         // Destination contract checks:
         // It seems redundant, but otherwise it would revert with no error
         if (!to.isContract()) revert IsNotContract();
-        if (!IERC165(to).supportsInterface(type(IERC6059).interfaceId))
+        if (!IERC165(to).supportsInterface(type(IERC6059).interfaceId)) {
             revert NestableTransferToNonNestableImplementer();
+        }
         _checkForInheritanceLoop(tokenId, to, destinationId);
 
         _beforeTokenTransfer(from, to, tokenId);
-        _beforeNestedTokenTransfer(
-            immediateOwner,
-            to,
-            parentId,
-            destinationId,
-            tokenId
-        );
+        _beforeNestedTokenTransfer(immediateOwner, to, parentId, destinationId, tokenId);
         _balances[from] -= 1;
         _updateOwnerAndClearApprovals(tokenId, destinationId, to);
         _balances[to] += 1;
@@ -604,17 +525,9 @@ ERC721Holder
      *  nested
      * @param targetId ID of the token into which the given token would be nested
      */
-    function _checkForInheritanceLoop(
-        uint256 currentId,
-        address targetContract,
-        uint256 targetId
-    ) private view {
+    function _checkForInheritanceLoop(uint256 currentId, address targetContract, uint256 targetId) private view {
         for (uint256 i; i < _MAX_LEVELS_TO_CHECK_FOR_INHERITANCE_LOOP;) {
-            (
-            address nextOwner,
-            uint256 nextOwnerTokenId,
-            bool isNft
-            ) = IERC6059(targetContract).directOwnerOf(targetId);
+            (address nextOwner, uint256 nextOwnerTokenId, bool isNft) = IERC6059(targetContract).directOwnerOf(targetId);
             // If there's a final address, we're good. There's no loop.
             if (!isNft) {
                 return;
@@ -626,9 +539,9 @@ ERC721Holder
             // We reuse the parameters to save some contract size
             targetContract = nextOwner;
             targetId = nextOwnerTokenId;
-        unchecked {
-            ++i;
-        }
+            unchecked {
+                ++i;
+            }
         }
         revert NestableTooDeep();
     }
@@ -658,14 +571,11 @@ ERC721Holder
      * @param tokenId ID of the token to mint
      * @param data Additional data to send with the tokens
      */
-    function _safeMint(
-        address to,
-        uint256 tokenId,
-        bytes memory data
-    ) internal virtual {
+    function _safeMint(address to, uint256 tokenId, bytes memory data) internal virtual {
         _mint(to, tokenId);
-        if (!_checkOnERC721Received(address(0), to, tokenId, data))
+        if (!_checkOnERC721Received(address(0), to, tokenId, data)) {
             revert ERC721TransferToNonReceiverImplementer();
+        }
     }
 
     /**
@@ -696,16 +606,12 @@ ERC721Holder
      * @param destinationId ID of the token into which to mint the new child token
      * @param data Additional data with no specified format, sent in the addChild call
      */
-    function _nestMint(
-        address to,
-        uint256 tokenId,
-        uint256 destinationId,
-        bytes memory data
-    ) internal virtual {
+    function _nestMint(address to, uint256 tokenId, uint256 destinationId, bytes memory data) internal virtual {
         // It seems redundant, but otherwise it would revert with no error
         if (!to.isContract()) revert IsNotContract();
-        if (!IERC165(to).supportsInterface(type(IERC6059).interfaceId))
+        if (!IERC165(to).supportsInterface(type(IERC6059).interfaceId)) {
             revert MintToNonNestableImplementer();
+        }
 
         _innerMint(to, tokenId, destinationId);
         _sendToNFT(address(0), to, 0, destinationId, tokenId, data);
@@ -722,11 +628,7 @@ ERC721Holder
      * @param tokenId ID of the token to mint
      * @param destinationId ID of the token into which to mint the new token
      */
-    function _innerMint(
-        address to,
-        uint256 tokenId,
-        uint256 destinationId
-    ) private {
+    function _innerMint(address to, uint256 tokenId, uint256 destinationId) private {
         if (to == address(0)) revert ERC721MintToTheZeroAddress();
         if (_exists(tokenId)) revert ERC721TokenAlreadyMinted();
         if (tokenId == 0) revert IdZeroForbidden();
@@ -735,10 +637,7 @@ ERC721Holder
         _beforeNestedTokenTransfer(address(0), to, 0, destinationId, tokenId);
 
         _balances[to] += 1;
-        _directOwners[tokenId] = DirectOwner({
-            ownerAddress: to,
-            tokenId: destinationId
-        });
+        _directOwners[tokenId] = DirectOwner({ownerAddress: to, tokenId: destinationId});
     }
 
     ////////////////////////////////////////
@@ -753,18 +652,8 @@ ERC721Holder
      * @param tokenId ID of the token for which the root owner is being retrieved
      * @return address Address of the root owner of the given token
      */
-    function ownerOf(
-        uint256 tokenId
-    )
-    public
-    view
-    virtual
-    override(IERC6059, IERC721Upgradeable)
-    returns (address)
-    {
-        (address owner, uint256 ownerTokenId, bool isNft) = directOwnerOf(
-            tokenId
-        );
+    function ownerOf(uint256 tokenId) public view virtual override(IERC6059, IERC721Upgradeable) returns (address) {
+        (address owner, uint256 ownerTokenId, bool isNft) = directOwnerOf(tokenId);
         if (isNft) {
             owner = IERC6059(owner).ownerOf(ownerTokenId);
         }
@@ -782,9 +671,7 @@ ERC721Holder
      *  should be `0`
      * @return bool A boolean value signifying whether the immediate owner is a token (`true`) or not (`false`)
      */
-    function directOwnerOf(
-        uint256 tokenId
-    ) public view virtual returns (address, uint256, bool) {
+    function directOwnerOf(uint256 tokenId) public view virtual returns (address, uint256, bool) {
         DirectOwner memory owner = _directOwners[tokenId];
         if (owner.ownerAddress == address(0)) revert ERC721InvalidTokenId();
 
@@ -815,10 +702,12 @@ ERC721Holder
      * @param maxChildrenBurns Maximum children to recursively burn
      * @return uint256 The number of recursive burns it took to burn all of the children
      */
-    function burn(
-        uint256 tokenId,
-        uint256 maxChildrenBurns
-    ) public virtual onlyApprovedOrDirectOwner(tokenId) returns (uint256) {
+    function burn(uint256 tokenId, uint256 maxChildrenBurns)
+        public
+        virtual
+        onlyApprovedOrDirectOwner(tokenId)
+        returns (uint256)
+    {
         return _burn(tokenId, maxChildrenBurns);
     }
 
@@ -835,22 +724,13 @@ ERC721Holder
      * @param maxChildrenBurns Maximum children to recursively burn
      * @return uint256 The number of recursive burns it took to burn all of the children
      */
-    function _burn(
-        uint256 tokenId,
-        uint256 maxChildrenBurns
-    ) internal virtual returns (uint256) {
+    function _burn(uint256 tokenId, uint256 maxChildrenBurns) internal virtual returns (uint256) {
         (address immediateOwner, uint256 parentId,) = directOwnerOf(tokenId);
         address owner = ownerOf(tokenId);
         _balances[immediateOwner] -= 1;
 
         _beforeTokenTransfer(owner, address(0), tokenId);
-        _beforeNestedTokenTransfer(
-            immediateOwner,
-            address(0),
-            parentId,
-            0,
-            tokenId
-        );
+        _beforeNestedTokenTransfer(immediateOwner, address(0), parentId, 0, tokenId);
 
         _approve(address(0), tokenId);
         _cleanApprovals(tokenId);
@@ -867,41 +747,29 @@ ERC721Holder
         uint256 length = children.length;
         //gas savings
         for (uint256 i; i < length;) {
-            if (totalChildBurns >= maxChildrenBurns)
-                revert MaxRecursiveBurnsReached(
-                    children[i].contractAddress,
-                    children[i].tokenId
-                );
+            if (totalChildBurns >= maxChildrenBurns) {
+                revert MaxRecursiveBurnsReached(children[i].contractAddress, children[i].tokenId);
+            }
             delete _childIsInActive[children[i].contractAddress][
             children[i].tokenId
             ];
-        unchecked {
-            // At this point we know pendingRecursiveBurns must be at least 1
-            pendingRecursiveBurns = maxChildrenBurns - totalChildBurns;
-        }
+            unchecked {
+                // At this point we know pendingRecursiveBurns must be at least 1
+                pendingRecursiveBurns = maxChildrenBurns - totalChildBurns;
+            }
             // We substract one to the next level to count for the token being burned, then add it again on returns
             // This is to allow the behavior of 0 recursive burns meaning only the current token is deleted.
             totalChildBurns +=
-            IERC6059(children[i].contractAddress).burn(
-                children[i].tokenId,
-                pendingRecursiveBurns - 1
-            ) +
-            1;
-        unchecked {
-            ++i;
-        }
+                IERC6059(children[i].contractAddress).burn(children[i].tokenId, pendingRecursiveBurns - 1) + 1;
+            unchecked {
+                ++i;
+            }
         }
         // Can't remove before burning child since child will call back to get root owner
         delete _directOwners[tokenId];
 
         _afterTokenTransfer(owner, address(0), tokenId);
-        _afterNestedTokenTransfer(
-            immediateOwner,
-            address(0),
-            parentId,
-            0,
-            tokenId
-        );
+        _afterNestedTokenTransfer(immediateOwner, address(0), parentId, 0, tokenId);
         emit Transfer(owner, address(0), tokenId);
         emit NestTransfer(immediateOwner, address(0), parentId, 0, tokenId);
 
@@ -919,8 +787,9 @@ ERC721Holder
         address owner = ownerOf(tokenId);
         if (to == owner) revert ERC721ApprovalToCurrentOwner();
 
-        if (_msgSender() != owner && !isApprovedForAll(owner, _msgSender()))
+        if (_msgSender() != owner && !isApprovedForAll(owner, _msgSender())) {
             revert ERC721ApproveCallerIsNotOwnerNorApprovedForAll();
+        }
 
         _approve(to, tokenId);
     }
@@ -928,9 +797,7 @@ ERC721Holder
     /**
      * @inheritdoc IERC721Upgradeable
      */
-    function getApproved(
-        uint256 tokenId
-    ) public view virtual returns (address) {
+    function getApproved(uint256 tokenId) public view virtual returns (address) {
         _requireMinted(tokenId);
 
         return _tokenApprovals[tokenId][ownerOf(tokenId)];
@@ -948,10 +815,7 @@ ERC721Holder
     /**
      * @inheritdoc IERC721Upgradeable
      */
-    function isApprovedForAll(
-        address owner,
-        address operator
-    ) public view virtual returns (bool) {
+    function isApprovedForAll(address owner, address operator) public view virtual returns (bool) {
         return _operatorApprovals[owner][operator];
     }
 
@@ -974,15 +838,8 @@ ERC721Holder
      * @param destinationId ID of the token to receive the given token
      * @param to Address of account to receive the token
      */
-    function _updateOwnerAndClearApprovals(
-        uint256 tokenId,
-        uint256 destinationId,
-        address to
-    ) internal {
-        _directOwners[tokenId] = DirectOwner({
-            ownerAddress: to,
-            tokenId: destinationId
-        });
+    function _updateOwnerAndClearApprovals(uint256 tokenId, uint256 destinationId, address to) internal {
+        _directOwners[tokenId] = DirectOwner({ownerAddress: to, tokenId: destinationId});
 
         // Clear approvals from the previous owner
         _approve(address(0), tokenId);
@@ -1008,14 +865,9 @@ ERC721Holder
      * @param tokenId ID of the token being checked
      * @return bool The boolean value indicating whether the `spender` is approved to manage the given token
      */
-    function _isApprovedOrOwner(
-        address spender,
-        uint256 tokenId
-    ) internal view virtual returns (bool) {
+    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view virtual returns (bool) {
         address owner = ownerOf(tokenId);
-        return (spender == owner ||
-        isApprovedForAll(owner, spender) ||
-        getApproved(tokenId) == spender);
+        return (spender == owner || isApprovedForAll(owner, spender) || getApproved(tokenId) == spender);
     }
 
     /**
@@ -1025,19 +877,14 @@ ERC721Holder
      * @return bool The boolean value indicating whether the `spender` is approved to manage the given token or its
      *  direct owner
      */
-    function _isApprovedOrDirectOwner(
-        address spender,
-        uint256 tokenId
-    ) internal view virtual returns (bool) {
+    function _isApprovedOrDirectOwner(address spender, uint256 tokenId) internal view virtual returns (bool) {
         (address owner, uint256 parentId,) = directOwnerOf(tokenId);
         // When the parent is an NFT, only it can do operations
         if (parentId != 0) {
             return (spender == owner);
         }
         // Otherwise, the owner or approved address can
-        return (spender == owner ||
-        isApprovedForAll(owner, spender) ||
-        getApproved(tokenId) == spender);
+        return (spender == owner || isApprovedForAll(owner, spender) || getApproved(tokenId) == spender);
     }
 
     /**
@@ -1071,21 +918,12 @@ ERC721Holder
      * @param data Optional data to send along with the call
      * @return bool Boolean value signifying whether the call correctly returned the expected magic value
      */
-    function _checkOnERC721Received(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
-    ) private returns (bool) {
+    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory data)
+        private
+        returns (bool)
+    {
         if (to.isContract()) {
-            try
-            IERC721Receiver(to).onERC721Received(
-                _msgSender(),
-                from,
-                tokenId,
-                data
-            )
-            returns (bytes4 retval) {
+            try IERC721Receiver(to).onERC721Received(_msgSender(), from, tokenId, data) returns (bytes4 retval) {
                 return retval == IERC721Receiver.onERC721Received.selector;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
@@ -1119,20 +957,13 @@ ERC721Holder
      * @param childId ID of the new proposed child token
      * @param data Additional data with no specified format
      */
-    function addChild(
-        uint256 parentId,
-        uint256 childId,
-        bytes memory data
-    ) public virtual {
+    function addChild(uint256 parentId, uint256 childId, bytes memory data) public virtual {
         _requireMinted(parentId);
 
         address childAddress = _msgSender();
         if (!childAddress.isContract()) revert IsNotContract();
 
-        Child memory child = Child({
-            contractAddress: childAddress,
-            tokenId: childId
-        });
+        Child memory child = Child({contractAddress: childAddress, tokenId: childId});
 
         _beforeAddChild(parentId, childAddress, childId);
 
@@ -1161,12 +992,11 @@ ERC721Holder
      * @param childId ID of the child token expected to be located at the specified index of the given parent token's
      *  pending children array
      */
-    function acceptChild(
-        uint256 parentId,
-        uint256 childIndex,
-        address childAddress,
-        uint256 childId
-    ) public virtual onlyApprovedOrOwner(parentId) {
+    function acceptChild(uint256 parentId, uint256 childIndex, address childAddress, uint256 childId)
+        public
+        virtual
+        onlyApprovedOrOwner(parentId)
+    {
         _acceptChild(parentId, childIndex, childAddress, childId);
     }
 
@@ -1185,19 +1015,19 @@ ERC721Holder
      * @param childId ID of the child token expected to be located at the specified index of the given parent token's
      *  pending children array
      */
-    function _acceptChild(
-        uint256 parentId,
-        uint256 childIndex,
-        address childAddress,
-        uint256 childId
-    ) internal virtual {
-        if (pendingChildrenOf(parentId).length <= childIndex)
+    function _acceptChild(uint256 parentId, uint256 childIndex, address childAddress, uint256 childId)
+        internal
+        virtual
+    {
+        if (pendingChildrenOf(parentId).length <= childIndex) {
             revert PendingChildIndexOutOfRange();
+        }
 
         Child memory child = pendingChildOf(parentId, childIndex);
         _checkExpectedChild(child, childAddress, childId);
-        if (_childIsInActive[childAddress][childId] != 0)
+        if (_childIsInActive[childAddress][childId] != 0) {
             revert ChildAlreadyExists();
+        }
 
         _beforeAcceptChild(parentId, childIndex, childAddress, childId);
 
@@ -1221,10 +1051,7 @@ ERC721Holder
      *  rootOwner of the previous parent.
      * @param tokenId ID of the parent token for which to reject all of the pending tokens
      */
-    function rejectAllChildren(
-        uint256 tokenId,
-        uint256 maxRejections
-    ) public virtual onlyApprovedOrOwner(tokenId) {
+    function rejectAllChildren(uint256 tokenId, uint256 maxRejections) public virtual onlyApprovedOrOwner(tokenId) {
         _rejectAllChildren(tokenId, maxRejections);
     }
 
@@ -1240,12 +1067,10 @@ ERC721Holder
      * @param maxRejections Maximum number of expected children to reject, used to prevent from
      *  rejecting children which arrive just before this operation.
      */
-    function _rejectAllChildren(
-        uint256 tokenId,
-        uint256 maxRejections
-    ) internal virtual {
-        if (_pendingChildren[tokenId].length > maxRejections)
+    function _rejectAllChildren(uint256 tokenId, uint256 maxRejections) internal virtual {
+        if (_pendingChildren[tokenId].length > maxRejections) {
             revert UnexpectedNumberOfChildren();
+        }
 
         _beforeRejectAllChildren(tokenId);
         delete _pendingChildren[tokenId];
@@ -1276,16 +1101,7 @@ ERC721Holder
         bool isPending,
         bytes memory data
     ) public virtual onlyApprovedOrOwner(tokenId) {
-        _transferChild(
-            tokenId,
-            to,
-            destinationId,
-            childIndex,
-            childAddress,
-            childId,
-            isPending,
-            data
-        );
+        _transferChild(tokenId, to, destinationId, childIndex, childAddress, childId, isPending, data);
     }
 
     /**
@@ -1325,13 +1141,7 @@ ERC721Holder
         }
         _checkExpectedChild(child, childAddress, childId);
 
-        _beforeTransferChild(
-            tokenId,
-            childIndex,
-            childAddress,
-            childId,
-            isPending
-        );
+        _beforeTransferChild(tokenId, childIndex, childAddress, childId, isPending);
 
         if (isPending) {
             _removeChildByIndex(_pendingChildren[tokenId], childIndex);
@@ -1342,49 +1152,19 @@ ERC721Holder
 
         if (to != address(0)) {
             if (destinationId == 0) {
-                IERC721(childAddress).safeTransferFrom(
-                    address(this),
-                    to,
-                    childId,
-                    data
-                );
+                IERC721(childAddress).safeTransferFrom(address(this), to, childId, data);
             } else {
                 // Destination is an NFT
-                IERC6059(child.contractAddress).nestTransferFrom(
-                    address(this),
-                    to,
-                    child.tokenId,
-                    destinationId,
-                    data
-                );
+                IERC6059(child.contractAddress).nestTransferFrom(address(this), to, child.tokenId, destinationId, data);
             }
         }
 
-        emit ChildTransferred(
-            tokenId,
-            childIndex,
-            childAddress,
-            childId,
-            isPending
-        );
-        _afterTransferChild(
-            tokenId,
-            childIndex,
-            childAddress,
-            childId,
-            isPending
-        );
+        emit ChildTransferred(tokenId, childIndex, childAddress, childId, isPending);
+        _afterTransferChild(tokenId, childIndex, childAddress, childId, isPending);
     }
 
-    function _checkExpectedChild(
-        Child memory child,
-        address expectedAddress,
-        uint256 expectedId
-    ) private pure {
-        if (
-            expectedAddress != child.contractAddress ||
-            expectedId != child.tokenId
-        ) revert UnexpectedChildId();
+    function _checkExpectedChild(Child memory child, address expectedAddress, uint256 expectedId) private pure {
+        if (expectedAddress != child.contractAddress || expectedId != child.tokenId) revert UnexpectedChildId();
     }
 
     ////////////////////////////////////////
@@ -1403,9 +1183,7 @@ ERC721Holder
      * @return struct[] An array of Child structs containing the parent token's active child tokens
      */
 
-    function childrenOf(
-        uint256 parentId
-    ) public view virtual returns (Child[] memory) {
+    function childrenOf(uint256 parentId) public view virtual returns (Child[] memory) {
         Child[] memory children = _activeChildren[parentId];
         return children;
     }
@@ -1422,9 +1200,7 @@ ERC721Holder
      * @return struct[] An array of Child structs containing the parent token's pending child tokens
      */
 
-    function pendingChildrenOf(
-        uint256 parentId
-    ) public view virtual returns (Child[] memory) {
+    function pendingChildrenOf(uint256 parentId) public view virtual returns (Child[] memory) {
         Child[] memory pendingChildren = _pendingChildren[parentId];
         return pendingChildren;
     }
@@ -1441,10 +1217,7 @@ ERC721Holder
      * @param index Index of the child token in the parent token's active child tokens array
      * @return struct A Child struct containing data about the specified child
      */
-    function childOf(
-        uint256 parentId,
-        uint256 index
-    ) public view virtual returns (Child memory) {
+    function childOf(uint256 parentId, uint256 index) public view virtual returns (Child memory) {
         if (childrenOf(parentId).length <= index) revert ChildIndexOutOfRange();
         Child memory child = _activeChildren[parentId][index];
         return child;
@@ -1462,12 +1235,10 @@ ERC721Holder
      * @param index Index of the child token in the parent token's pending child tokens array
      * @return struct A Child struct containting data about the specified child
      */
-    function pendingChildOf(
-        uint256 parentId,
-        uint256 index
-    ) public view virtual returns (Child memory) {
-        if (pendingChildrenOf(parentId).length <= index)
+    function pendingChildOf(uint256 parentId, uint256 index) public view virtual returns (Child memory) {
+        if (pendingChildrenOf(parentId).length <= index) {
             revert PendingChildIndexOutOfRange();
+        }
         Child memory child = _pendingChildren[parentId][index];
         return child;
     }
@@ -1479,10 +1250,7 @@ ERC721Holder
      * @return bool A boolean value signifying whether the given child token is included in an active child tokens array
      *  of a token (`true`) or not (`false`)
      */
-    function childIsInActive(
-        address childAddress,
-        uint256 childId
-    ) public view virtual returns (bool) {
+    function childIsInActive(address childAddress, uint256 childId) public view virtual returns (bool) {
         return _childIsInActive[childAddress][childId] != 0;
     }
 
@@ -1502,11 +1270,7 @@ ERC721Holder
      * @param to Address to which the token is being transferred
      * @param tokenId ID of the token being transferred
      */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual {}
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual {}
 
     /**
      * @notice Hook that is called after any transfer of tokens. This includes minting and burning.
@@ -1520,11 +1284,7 @@ ERC721Holder
      * @param to Address to which the token has been transferred
      * @param tokenId ID of the token that has been transferred
      */
-    function _afterTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual {}
+    function _afterTokenTransfer(address from, address to, uint256 tokenId) internal virtual {}
 
     /**
      * @notice Hook that is called before nested token transfer.
@@ -1574,11 +1334,7 @@ ERC721Holder
      * @param childId ID of the child token expected to be located at the specified index of the given parent token's
      *  pending children array
      */
-    function _beforeAddChild(
-        uint256 tokenId,
-        address childAddress,
-        uint256 childId
-    ) internal virtual {}
+    function _beforeAddChild(uint256 tokenId, address childAddress, uint256 childId) internal virtual {}
 
     /**
      * @notice Hook that is called after a child is added to the pending tokens array of a given token.
@@ -1594,11 +1350,7 @@ ERC721Holder
      * @param childId ID of the child token expected to be located at the specified index of the given parent token's
      *  pending children array
      */
-    function _afterAddChild(
-        uint256 tokenId,
-        address childAddress,
-        uint256 childId
-    ) internal virtual {}
+    function _afterAddChild(uint256 tokenId, address childAddress, uint256 childId) internal virtual {}
 
     /**
      * @notice Hook that is called before a child is accepted to the active tokens array of a given token.
@@ -1615,12 +1367,10 @@ ERC721Holder
      * @param childId ID of the child token expected to be located at the specified index of the given parent token's
      *  pending children array
      */
-    function _beforeAcceptChild(
-        uint256 parentId,
-        uint256 childIndex,
-        address childAddress,
-        uint256 childId
-    ) internal virtual {}
+    function _beforeAcceptChild(uint256 parentId, uint256 childIndex, address childAddress, uint256 childId)
+        internal
+        virtual
+    {}
 
     /**
      * @notice Hook that is called after a child is accepted to the active tokens array of a given token.
@@ -1637,12 +1387,10 @@ ERC721Holder
      * @param childId ID of the child token that was expected to be located at the specified index of the given parent
      *  token's pending children array
      */
-    function _afterAcceptChild(
-        uint256 parentId,
-        uint256 childIndex,
-        address childAddress,
-        uint256 childId
-    ) internal virtual {}
+    function _afterAcceptChild(uint256 parentId, uint256 childIndex, address childAddress, uint256 childId)
+        internal
+        virtual
+    {}
 
     /**
      * @notice Hook that is called before a child is transferred from a given child token array of a given token.
@@ -1726,9 +1474,7 @@ ERC721Holder
         array.pop();
     }
 
-
     uint256[35] private __gap;
-
 }
 
 contract ProxiedMEP1002Token is Proxied, UUPSUpgradeable, MEP1002Token {

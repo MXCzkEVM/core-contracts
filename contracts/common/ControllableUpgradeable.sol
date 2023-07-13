@@ -1,20 +1,14 @@
 pragma solidity ^0.8.4;
 
-import {
-OwnableUpgradeable
-} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract ControllableUpgradeable is OwnableUpgradeable {
-
     mapping(address => bool) public controllers;
 
     event ControllerChanged(address indexed controller, bool enabled);
 
     modifier onlyController() {
-        require(
-            controllers[msg.sender],
-            "Controllable: Caller is not a controller"
-        );
+        require(controllers[msg.sender], "Controllable: Caller is not a controller");
         _;
     }
 
@@ -29,7 +23,7 @@ contract ControllableUpgradeable is OwnableUpgradeable {
     }
 
     /**
- * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
      * Can only be called by the current owner.
      */
     function transferOwnership(address newOwner) public override onlyOwner {
@@ -39,5 +33,4 @@ contract ControllableUpgradeable is OwnableUpgradeable {
         }
         _transferOwnership(newOwner);
     }
-
 }

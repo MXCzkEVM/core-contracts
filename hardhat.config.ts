@@ -18,9 +18,9 @@ export const archivedDeploymentPath = "./deployments/archive";
 
 const real_accounts = [
     process.env.DEPLOYER_KEY || "",
-    process.env.OTHER_ACCOUNT || "",
     process.env.OWNER_KEY || process.env.DEPLOYER_KEY || "",
     process.env.PRIVATE_KEY_NOPERMISSION || process.env.PRIVATE_KEY || "",
+    process.env.OTHER_ACCOUNT || "",
 ] as string[]
 
 type HttpNetworkAccountsUserConfig = /*unresolved*/ any
@@ -57,6 +57,13 @@ const config: HardhatUserConfig = {
             gas: 8000000,
             saveDeployments: true,
             allowUnlimitedContractSize: true,
+        },
+        mxc: {
+            url: 'https://rpc.mxc.com',
+            saveDeployments: true,
+            chainId: 18686,
+            accounts: real_accounts,
+            gasPrice: 500000000000000
         },
         mxc_testnet: {
             saveDeployments: true,

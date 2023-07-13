@@ -39,7 +39,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await (await ProxiedMEP1002NamingToken.setController(ProxiedMEP1002Token.address, true)).wait();
         await (await ProxiedMEP1002Token.setController(deployer, true)).wait();
         await (await ProxiedMEP1002Token.setMNSToken(
-            "0x2246EdAd0bc9212Bae82D43974619480A9D1f387"
+            "0xD1B70f92b310c3Fa95b83dB436E00a53e1f1f5d5"
         )).wait();
         const ownerStorage = await ethers.provider.getStorageAt(
             tx.address,

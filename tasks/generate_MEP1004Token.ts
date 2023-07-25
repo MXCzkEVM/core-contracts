@@ -51,10 +51,10 @@ export async function execute(hre: HardhatRuntimeEnvironment, args: any) {
   };
 
   const NftAssets: { [key: string]: string[] } = {
-    [MEP1002TokenIds[0].toString()]: ["2"],
-    [MEP1002TokenIds[1].toString()]: ["0", "1"],
-    [MEP1002TokenIds[2].toString()]: ["3"],
-    [MEP1002TokenIds[3].toString()]: ["4"]
+    [MEP1002TokenIds[0].toString()]: ["0x1fF4332089e649Ff98C8cE3BFA0137aF9bE6B67a-0"],
+    [MEP1002TokenIds[1].toString()]: ["0x588Fd9832f03545775966513597ebC6b2a1B3685-0", "0x588Fd9832f03545775966513597ebC6b2a1B3685-1"],
+    [MEP1002TokenIds[2].toString()]: ["0x6D88bA27329f463b4b5d467a1f016C773aFb9e83-0"],
+    [MEP1002TokenIds[3].toString()]: ["0x19887DACDcc657B77880b7648fe869Ac3Ef7a8fd-1"]
   };
 
   const nonce = await owner.getTransactionCount();

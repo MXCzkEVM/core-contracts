@@ -11,8 +11,8 @@ async function main() {
   log.debug(`network: ${network}`);
   const { ethers } = await hre;
   const { deployer } = await getNamedSigners(hre);
-  const MEP1004Token = await ethers.getContract<MEP1004Token>("MEP1004Token");
-  const LPWAN = await ethers.getContract<LPWAN>("LPWAN");
+  const MEP1004Token = await ethers.getContract<MEP1004Token>("ProxiedMEP1004Token");
+  const LPWAN = await ethers.getContract<LPWAN>("ProxiedLPWAN");
   const nonce = await deployer.getTransactionCount();
 
   const MEP1002TokenIds = [
@@ -23,6 +23,9 @@ async function main() {
   ];
   // console.log(await MEP1004Token.getMEP1002Slot(MEP1002TokenIds[0]));
   // console.log(await MEP1004Token.getMEP1002Slot(MEP1002TokenIds[1]));
+  // console.log(await MEP1004Token.getMEP1002Slot(MEP1002TokenIds[2]));
+  // console.log(await MEP1004Token.getMEP1002Slot(MEP1002TokenIds[3]));
+
   // return;
   // return;
   const M2XTestSNCode = getRandomM2XTestSNCode();
@@ -31,38 +34,44 @@ async function main() {
 
   // return;
 
-  await LPWAN.mintMEP1004Stations(
-    deployer.address,
-    M2XTestSNCode,
-    {
-      nonce: nonce
-    }
-  );
-
-  await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode1, {
-    nonce: nonce + 1
-  });
-  await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode2, {
-    nonce: nonce + 2
-  });
-  await MEP1004Token.insertToMEP1002Slot(
-    BigNumber.from(10),
-    MEP1002TokenIds[3],
-    0,
-    { nonce: nonce + 3 }
-  );
-  await MEP1004Token.insertToMEP1002Slot(
-    BigNumber.from(11),
-    MEP1002TokenIds[3],
-    0,
-    { nonce: nonce + 4 }
-  );
-  await MEP1004Token.insertToMEP1002Slot(
-    BigNumber.from(12),
-    MEP1002TokenIds[3],
-    1,
-    { nonce: nonce + 5 }
-  );
+  // await LPWAN.mintMEP1004Stations(
+  //   deployer.address,
+  //   M2XTestSNCode,
+  //   {
+  //     nonce: nonce
+  //   }
+  // );
+  //
+  // await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode1, {
+  //   nonce: nonce + 1
+  // });
+  // await LPWAN.mintMEP1004Stations(deployer.address, NEOTestSNCode2, {
+  //   nonce: nonce + 2
+  // });
+  // await MEP1004Token.insertToMEP1002Slot(
+  //   BigNumber.from(29),
+  //   MEP1002TokenIds[3],
+  //   0,
+  //   { nonce: nonce + 3 }
+  // );
+  // await MEP1004Token.insertToMEP1002Slot(
+  //   BigNumber.from(30),
+  //   MEP1002TokenIds[3],
+  //   0,
+  //   { nonce: nonce + 4 }
+  // );
+  // await MEP1004Token.insertToMEP1002Slot(
+  //   BigNumber.from(31),
+  //   MEP1002TokenIds[3],
+  //   1,
+  //   { nonce: nonce + 5 }
+  // );   .km
+  // await MEP1004Token.removeFromMEP1002SlotAdmin(
+  //       BigNumber.from(31),
+  //       MEP1002TokenIds[3],
+  //       1,
+  //       { nonce: nonce }
+  // )
 }
 
 // We recommend this pattern to be able to use async/await everywhere

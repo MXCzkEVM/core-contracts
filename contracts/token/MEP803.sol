@@ -11,53 +11,33 @@ import "./IMEP803.sol";
 contract SensorProfile is IMEP803 {
     // State variables
     address public owner;
-    address public lpwanAddress;
-    uint256 sensorId;
-
-    mapping(uint256 => mapping(address => bytes32)) public sensorProfile;
-
-    // Custom Errors
-    error WRONG_LPWAN_ADDRESS();
-    error ONLY_OWNER();
+    address public appContractAddress;
+    bytes32 public profileURIHash;
+    string public tier;
 
     /**
      * @notice Constructor function to initialize a new `SensorProfile` instance.
-     * @param _lpwanAddress The address of the lpwan contract.
+     * @param _appContractAddress The address of the lpwan contract.
+     * @param _sensorProfileURI The metadata link of the sensor profile.
+     * @param _tier The tier of the sensor profile.
      */
-    constructor(address _lpwanAddress) {
-        lpwanAddress = _lpwanAddress;
+    constructor(address _appContractAddress, string memory _sensorProfileURI, string memory _tier) {
+        appContractAddress = _appContractAddress;
         owner = msg.sender;
 
-        emit MEP803Deployed(address(this));
-    }
+        bytes32 _profileURIHash = hashString(_sensorProfileURI);
 
-    /**
-     * @dev See {IMEP-803 -> createSensorProfile}
-     * Emits an {SensorProfileCreated} event indicating the created profile.
-     */
-    function createSensorProfile(address _lpwanAddress, string calldata _profileURI) external {
-        if (msg.sender != owner) {
-            revert ONLY_OWNER();
-        }
+        profileURIHash = _profileURIHash;
+        tier = _tier;
 
-        if (_lpwanAddress != lpwanAddress) {
-            revert WRONG_LPWAN_ADDRESS();
-        }
-
-        sensorId++;
-
-        bytes32 _profileURIHash = hashString(_profileURI);
-
-        sensorProfile[sensorId][_lpwanAddress] = _profileURIHash;
-
-        emit SensorProfileCreated(_lpwanAddress, _profileURI);
+        emit SensorProfileDeployed(address(this), _appContractAddress, _sensorProfileURI);
     }
 
     /**
      * @dev Returns the keccak256 hash of the input metadata link string
      * @param _profileURI The metadata link string to be hashed
      */
-    function hashString(string calldata _profileURI) internal pure returns (bytes32 profileURIHash_) {
+    function hashString(string memory _profileURI) internal pure returns (bytes32 profileURIHash_) {
         profileURIHash_ = keccak256(abi.encodePacked(_profileURI));
     }
 }

@@ -12,12 +12,8 @@ contract LPWANMock {
     function createMEP802(
         string memory _tokenName,
         string memory _symbol,
-        uint256 _yearOneFee,
-        uint256 _yearTwoFee,
-        uint256 _yearFiveFee,
-        uint256 _noOfBlockYearOne,
-        uint256 _noOfBlockYearTwo,
-        uint256 _noOfBlockYearFive,
+        uint256 _yearFee,
+        uint256 _noOfBlock,
         address _applicationContractAddress
     ) external {
         mep802Id++;
@@ -28,13 +24,10 @@ contract LPWANMock {
             new ProvisioningContract{salt: _salt}(
                 _tokenName,
                 _symbol,
-                _yearOneFee,
-                _yearTwoFee,
-                _yearFiveFee,
-                _noOfBlockYearOne,
-                _noOfBlockYearTwo,
-                _noOfBlockYearFive,
-                _applicationContractAddress
+                _yearFee,
+                _noOfBlock,
+                _applicationContractAddress,
+                address(this)
             )
         );
 

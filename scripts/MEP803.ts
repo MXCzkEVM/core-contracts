@@ -1,17 +1,6 @@
 import { ContractReceipt } from "ethers";
 import { ethers } from "hardhat";
 
-/*
-Sensor Profile deployed to 0xdebBFb56b4354A3E389910088731E9702331C351
-Sensor Profile Deployed Event:
-Deployed Contract Address:  0xdebBFb56b4354A3E389910088731E9702331C351
-Application Contract Address:  0x47bEF8F10F525dC5c1aA2A6C33B33520f61b7011
-Sensor Profile URI:  {
-  _isIndexed: true,
-  hash: '0xd1648e9f495f1f74cf2e034f8059e07be80651dd06d997fe245534da7647e768',
-  constructor: [Function: Indexed] { isIndexed: [Function (anonymous)] }
-}
-*/
 async function main() {
   const ApplicationAddress = '0x47bEF8F10F525dC5c1aA2A6C33B33520f61b7011';
   const PROFILE_URI = "https://gateway.pinata.cloud/ipfs/Qmav5akQh5ZzWZ1UKAQ66LaXZZFnYqC3GYw6xVVJiXfQfu"

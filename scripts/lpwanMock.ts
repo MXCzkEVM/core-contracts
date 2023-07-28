@@ -2,16 +2,12 @@ import { ContractReceipt } from "ethers";
 import { ethers } from "hardhat";
 
 async function main() {
-    const ApplicationContractAddress = '0x32e50C7761F6C4107663c8247E49f7aa2A0F1941';
+    const ApplicationContractAddress = '0x47bEF8F10F525dC5c1aA2A6C33B33520f61b7011';
 
     const TOKEN_NAME = 'Walk Sensor Provisioning';
     const TOKEN_SYMBOL = 'WSP'
-    const AMOUNT_500 = ethers.utils.parseEther('500');
     const AMOUNT_1000 = ethers.utils.parseEther('1000');
-    const AMOUNT_2500 = ethers.utils.parseEther('2500');
     const BLOCK_1 = 2591865;
-    const BLOCK_2 = 5183730;
-    const BLOCK_5 = 12959325;
 
     const LPWANMock = await ethers.getContractFactory("LPWANMock");
     const lpwanMock = await LPWANMock.deploy();
@@ -23,7 +19,7 @@ async function main() {
     );
 
     // CREATE MEP802
-    const createMEP802Txn = await lpwanMock.createMEP802(TOKEN_NAME, TOKEN_SYMBOL, AMOUNT_500, AMOUNT_1000, AMOUNT_2500, BLOCK_1, BLOCK_2, BLOCK_5, ApplicationContractAddress);
+    const createMEP802Txn = await lpwanMock.createMEP802(TOKEN_NAME, TOKEN_SYMBOL, AMOUNT_1000, BLOCK_1, ApplicationContractAddress);
     const createMEP802TxnReceipt: ContractReceipt = await createMEP802Txn.wait();
 
     // Get the transaction logs

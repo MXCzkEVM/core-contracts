@@ -51,10 +51,12 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
     mapping (address => address[]) public userSelectedToken;
 
     function initialize(
+        address _ERC6551Registry,
         address _ERC6551AccountImplAddr,
         address _MEP1004Addr,
         uint _maxSelectToken
     ) external initializer {
+        ERC6551Registry = IERC6551Registry(_ERC6551Registry);
         ERC6551AccountImplAddr = _ERC6551AccountImplAddr;
         MEP1004Addr = _MEP1004Addr;
         maxSelectToken = _maxSelectToken;

@@ -62,8 +62,7 @@ const config: HardhatUserConfig = {
             url: 'https://rpc.mxc.com',
             saveDeployments: true,
             chainId: 18686,
-            accounts: real_accounts,
-            gasPrice: 500000000000000
+            accounts: real_accounts
         },
         mxc_testnet: {
             saveDeployments: true,

@@ -1,5 +1,5 @@
 import { ContractReceipt } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, run } from "hardhat";
 
 async function main() {
   const APP_NAME = 'Walk Sensor';
@@ -8,6 +8,14 @@ async function main() {
   const isoApplication = await ISOApplication.deploy(APP_NAME);
 
   await isoApplication.deployed();
+
+  console.log('Verifying Application Contract.....');
+  await run("verify:verify", {
+    address: isoApplication.address,
+    constructorArguments: [
+      APP_NAME
+    ]
+  })
 
   console.log(
     `ISOApplication deployed to ${isoApplication.address}`

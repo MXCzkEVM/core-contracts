@@ -81,16 +81,17 @@ const config: HardhatUserConfig = {
         nopermission: 2
     },
     etherscan: {
-        apiKey: {
-            mxc_testnet: "testr",
-        },
+        // apiKey: {
+        //     mxc_testnet: "testr",
+        // },
+        apiKey: process.env.ETHERSCAN_API_KEY,
         customChains: [
             {
                 network: "mxc_testnet",
                 chainId: 5167003,
                 urls: {
-                    apiURL: "http://51.222.254.9/api",
-                    browserURL: "http://51.222.254.9/",
+                    apiURL: "https://wannsee-explorer-v1.mxc.com/api",
+                    browserURL: "https://wannsee-explorer.mxc.com/",
                 },
             },
         ],

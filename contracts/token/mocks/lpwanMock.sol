@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract LPWANMock {
     uint256 public mep802Id;
     uint256 public mep804Id;
-    mapping(uint256 => address) public provisioningContractAddresses;
+    mapping(uint256 => address) public sensorNFTContractAddresses;
     mapping(uint256 => address) public rewardContractAddresses;
 
     event MEP802Created(address indexed _contractAddress, uint256 indexed _id);
@@ -37,8 +37,8 @@ contract LPWANMock {
 
         bytes32 _salt = keccak256(abi.encodePacked(block.number, msg.sender));
 
-        address provisioningContract_ = address(
-            new ProvisioningContract{salt: _salt}(
+        address sensorNFTContract_ = address(
+            new SensorNFTContract{salt: _salt}(
                 _tokenName,
                 _symbol,
                 _yearFee,
@@ -48,14 +48,13 @@ contract LPWANMock {
             )
         );
 
-        provisioningContractAddresses[mep802Id] = provisioningContract_;
+        sensorNFTContractAddresses[mep802Id] = sensorNFTContract_;
 
-        emit MEP802Created(provisioningContract_, mep802Id);
+        emit MEP802Created(sensorNFTContract_, mep802Id);
     }
 
     function createMEP804(
         address _applicationContractAddress,
-        address _provisioningContractAddress,
         address _businessOwner,
         address _lpwanAddress,
         address[] memory _sensorProfileAddresses,
@@ -71,7 +70,6 @@ contract LPWANMock {
         address rewardContract_ = address(
             new RewardContract{salt: _salt}(
                 _applicationContractAddress,
-                _provisioningContractAddress,
                 _businessOwner,
                 _lpwanAddress,
                 _sensorProfileAddresses,

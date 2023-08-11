@@ -8,21 +8,25 @@ interface IMEP804 {
 
     /// @notice Gets fired when more reward token is minted
     /// @param _amount amount of the token minted
-    /// @param _poolAmountOfThisCycle pool amount of the current cycle
-    event MoreRewardTokenMinted(uint256 indexed _amount, uint256 indexed _poolAmountOfThisCycle);
+    event MoreRewardTokenMinted(uint256 indexed _amount);
 
-    /// @notice Gets fired when reward mining data is set
-    /// @param _health health of the sensor
-    /// @param _totalMiningPower total mining power of the sensor
-    /// @param _tier the tier that the sensor belong to
-    event RewardMiningDataSet(uint256 indexed _health, uint256 indexed _totalMiningPower, string indexed _tier);
+    /// @notice Gets fired when tiers allocation is set
+    /// @param _tierLength the length of the tiers
+    /// @param _amountLength the length of the amount of tiers
+    event TokenAllocationForTierSet(uint256 indexed _tierLength, uint256 indexed _amountLength);
 
     /// @notice Gets fired when mining power is set
     /// @param _miningPower mining power of the sensor
+    /// @param _health the health of the sensor
+    /// @param _tokenId the tokenId of the sensor
     /// @param _sensorProfileAddress Contract address of the sensor profile
     /// @param _nftAccountAddress Contract address of the nft account
-    event MiningPowerSet(
-        uint256 indexed _miningPower, address indexed _sensorProfileAddress, address indexed _nftAccountAddress
+    event HealthMiningPowerSet(
+        uint256 indexed _miningPower,
+        uint256 indexed _health,
+        uint256 indexed _tokenId,
+        address _sensorProfileAddress,
+        address _nftAccountAddress
     );
 
     /// @notice Gets fired when reward is submitted
@@ -46,17 +50,36 @@ interface IMEP804 {
     /// @param _amount amount of the token minted
     function mintMoreRewardToken(uint256 _amount) external;
 
-    /// @notice set the reward mining data of each sensor
-    /// @param _tokenId the token id of the nft
-    /// @param _nftAccountAddress Contract address of the nft account
-    /// @param _sensorProfileAddress Contract address of the sensor profile
-    function setRewardMiningData(uint256 _tokenId, address _nftAccountAddress, address _sensorProfileAddress)
-        external;
+    /// @notice this function returns the amount of reward token in the contract
+    /// @return uint256 total reward token
+    function rewardTokenBalance() external view returns (uint256);
+
+    /// @notice set the allocation for each tier, i.e the amount for each tier
+    /// @param _tiers this is an array of tiers
+    /// @param _amounts this is an array of amount for tiers
+    function setTokenAllocationForTier(string[] memory _tiers, uint256[] memory _amounts) external;
+
+    // /// @notice set the reward mining data of each sensor
+    // /// @param _tokenId the token id of the nft
+    // /// @param _nftAccountAddress Contract address of the nft account
+    // /// @param _sensorProfileAddress Contract address of the sensor profile
+    // function setRewardMiningData(
+    //     uint256 _tokenId,
+    //     address _nftAccountAddress,
+    //     address _sensorProfileAddress
+    // ) external;
 
     /// @notice set the mining power of each sensor
     /// @param _nftAccountAddress Contract address of the nft account
     /// @param _sensorProfileAddress Contract address of the sensor profile
-    function setMiningPower(address _nftAccountAddress, address _sensorProfileAddress) external;
+    /// @param _miningPower the mining power of each sensor submitted by chirp vm
+    /// @param _tokenId the token id for each sensor
+    function setHealthMiningPower(
+        address _nftAccountAddress,
+        address _sensorProfileAddress,
+        uint256 _miningPower,
+        uint256 _tokenId
+    ) external;
 
     /// @notice Calculates the health factor based on the sensor's fuel health
     /// @param _nftContractAddress Contract address of the nft account

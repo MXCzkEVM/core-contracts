@@ -6,7 +6,7 @@ pragma solidity ^0.8.18;
 interface IMEP802 {
     /// @dev This event gets emitted when the Provisioning contract is deployed.
     ///  The parameters is the address of the contract deployed
-    event ProvisioningContractDeployed(address indexed nftContractAddress);
+    event SensorNFTContractDeployed(address indexed nftContractAddress);
 
     /// @dev This event gets emitted when a PID is produced.
     ///  The parameters are the email, amount and Application contract address.

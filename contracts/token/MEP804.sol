@@ -17,18 +17,16 @@ import "./IERC6551Account.sol";
  */
 contract RewardContract is IMEP804, ERC20, ReentrancyGuard {
     // STRUCT
-    struct SensorMiningData {
-        uint256 tokenId;
-        address sensorProfileContractAddress;
+    struct HealthMining {
         uint256 healthFactor;
         uint256 miningPower;
+        uint256 tokenId;
     }
 
     // STATE VARIABLES
     address public owner;
     address public businessOwner;
     address public applicationContractAddress;
-    ProvisioningContract public provisioningContractAddress;
     address public lpwanAddress;
     address[] public sensorProfileAddresses;
     string public xToEarnFormulaJSON;
@@ -39,14 +37,14 @@ contract RewardContract is IMEP804, ERC20, ReentrancyGuard {
     // MAPPINGS
     mapping(address => uint256) public reward;
     mapping(string => uint256) public tierStrength;
-    mapping(string => mapping(address => SensorMiningData)) public miningData;
+    mapping(string => uint256) public tierTokenAllocation;
+    mapping(string => mapping(address => HealthMining)) public healthMiningPower;
 
     /**
      * @dev Constructor to initialize the contract with essential parameters and mint initial reward tokens.
      */
     constructor(
         address _applicationContractAddress,
-        address _provisioningContractAddress,
         address _businessOwner,
         address _lpwanAddress,
         address[] memory _sensorProfileAddresses,
@@ -54,19 +52,14 @@ contract RewardContract is IMEP804, ERC20, ReentrancyGuard {
         string memory _name,
         string memory _symbol,
         uint256 _totalRewardAmount
-    ) ERC20(_name, _symbol) {
+    ) payable ERC20(_name, _symbol) {
         owner = msg.sender;
         businessOwner = _businessOwner;
-
         applicationContractAddress = _applicationContractAddress;
-
-        provisioningContractAddress = ProvisioningContract(_provisioningContractAddress);
 
         lpwanAddress = _lpwanAddress;
         sensorProfileAddresses = _sensorProfileAddresses;
         xToEarnFormulaJSON = _xToEarnFormulaJSON;
-
-        poolAmountOfThisCycle = _totalRewardAmount;
 
         // mints the initial reward into the contract
         _mint(address(this), _totalRewardAmount);
@@ -82,7 +75,9 @@ contract RewardContract is IMEP804, ERC20, ReentrancyGuard {
     error ONLY_OWNER();
     error WRONG_APPLICATION_ADDRESS();
     error AMOUNT_MUST_BE_GREATER_THAN_ZERO();
-    error ZERO_AMOUNT();
+    error ZERO_REWARD_AMOUNT();
+    error ARRAY_MUST_HAVE_EQUAL_LENGTH();
+    error INSUFFICIENT_TOKEN_BALANCE();
 
     /**
      * @dev See {IMEP-804 -> renewDevice}
@@ -97,22 +92,69 @@ contract RewardContract is IMEP804, ERC20, ReentrancyGuard {
         if (_amount == 0) {
             revert AMOUNT_MUST_BE_GREATER_THAN_ZERO();
         }
-        // the pool amount for the cycle is updated
-        poolAmountOfThisCycle = _amount;
         // token is minted
         _mint(address(this), _amount);
         // emits event
-        emit MoreRewardTokenMinted(_amount, poolAmountOfThisCycle);
+        emit MoreRewardTokenMinted(_amount);
     }
 
     /**
-     * @dev See {IMEP-804 -> setRewardMiningData}
-     * Emits an {RewardMiningDataSet} event indicating data for mining data of reward
-     * like tier, health factor, total mining power.
+     * @dev See {IMEP-804 -> rewardTokenBalance}
      */
-    function setRewardMiningData(uint256 _tokenId, address _nftAccountAddress, address _sensorProfileAddress)
-        external
-    {
+    function rewardTokenBalance() public view returns (uint256) {
+        return balanceOf(address(this));
+    }
+
+    /**
+     * @dev See {IMEP-804 -> setTokenAllocationForTier}
+     * Emits an {TokenAllocationForTierSet} event indicating allocation for each tier.
+     */
+    function setTokenAllocationForTier(
+        string[] memory _tiers,
+        uint256[] memory _amounts
+    ) external {
+        // check the length of the two arrays
+        if (_tiers.length != _amounts.length) {
+            revert ARRAY_MUST_HAVE_EQUAL_LENGTH();
+        }
+
+        // loop the amount array and set the total amount to state variable
+        uint256 _totalAmount = 0;
+        for (uint256 i = 0; i < _amounts.length; i++) {
+            _totalAmount += _amounts[i];
+        }
+
+        // check the contract token balace be less than total amount
+        if (rewardTokenBalance() < _totalAmount*1e18) {
+            revert INSUFFICIENT_TOKEN_BALANCE();
+        }
+
+        // sett the total amouny in state variable
+        poolAmountOfThisCycle = _totalAmount;
+        // poolAmountOfThisCycle += _amounts;
+
+        // the pool amount for each tier is set
+        for (uint256 i = 0; i < _tiers.length; i++) {
+            tierTokenAllocation[_tiers[i]] = _amounts[i];
+        }
+
+        // emits an event
+        emit TokenAllocationForTierSet(_tiers.length, _amounts.length);
+    }
+
+    /**
+     * @dev See {IMEP-804 -> setHealthMiningPower}
+     * Emits an {HealthMiningPowerSet} event indicating health and mining power sensor.
+     */
+    function setHealthMiningPower(
+        address _nftAccountAddress,
+        address _sensorProfileAddress,
+        uint256 _miningPower,
+        uint256 _tokenId
+    ) external {
+        // gets the tier of the sensor profile contract
+        string memory _tier = IMEP803(_sensorProfileAddress).getTier();
+
         uint256 _health;
         // checks the health status and calculate if its true and set to 1 if false
         if (healthStatus == true) {
@@ -120,50 +162,31 @@ contract RewardContract is IMEP804, ERC20, ReentrancyGuard {
         } else {
             _health = 1;
         }
-        // gets the tier of the sensor profile contract
-        string memory _tier = IMEP803(_sensorProfileAddress).getTier();
 
-        // set the strength of a tier in the tierStrength mapping to know the mining power of each tier
-        tierStrength[_tier]++;
-        // increment the total mining power on each function call
-        totalMiningPower++;
-
-        // get the sensor profile address associated with the provisioning contract address in MEP802 using the token id
-        address _mySensorProfileAddress = ProvisioningContract(provisioningContractAddress).getSensorNFTData(_tokenId);
-
-        // the sensor profile address submitted must be compared with the one gotten from MEP803
-        if (_sensorProfileAddress == _mySensorProfileAddress) {
-            // values of the mining data are set into the 2D mapping
-            SensorMiningData memory _sensorData = miningData[_tier][_nftAccountAddress];
-
-            _sensorData.tokenId = _tokenId;
-            _sensorData.sensorProfileContractAddress = _sensorProfileAddress;
-            _sensorData.healthFactor = _health;
-        }
-        // emits event
-        emit RewardMiningDataSet(_health, totalMiningPower, _tier);
-    }
-
-    /**
-     * @dev See {IMEP-804 -> setMiningPower}
-     * Emits an {MiningPowerSet} event indicating mining power for each sensor.
-     */
-    function setMiningPower(address _nftAccountAddress, address _sensorProfileAddress) external {
-        // gets the tier of the sensor profile contract
-        string memory _tier = IMEP803(_sensorProfileAddress).getTier();
-        // get the mining power of each tier
-        uint256 _miningPower = tierStrength[_tier];
         // mining power data is set into the 2D mapping
-        SensorMiningData memory _sensorData = miningData[_tier][_nftAccountAddress];
+        HealthMining storage _sensorData = healthMiningPower[_tier][
+            _nftAccountAddress
+        ];
         _sensorData.miningPower = _miningPower;
+        _sensorData.healthFactor = _health;
+        _sensorData.tokenId = _tokenId;
+
         // emits an event
-        emit MiningPowerSet(_miningPower, _sensorProfileAddress, _nftAccountAddress);
+        emit HealthMiningPowerSet(
+            _miningPower,
+            _health,
+            _tokenId,
+            _nftAccountAddress,
+            _sensorProfileAddress
+        );
     }
 
     /**
      * @dev See {IMEP-804 -> calculateFuelHealth}
      */
-    function calculateFuelHealth(address _nftContractAddress) public view returns (uint256 fuelHealth_) {
+    function calculateFuelHealth(
+        address _nftContractAddress
+    ) public view returns (uint256 fuelHealth_) {
         // get the balance of the reward token in the contract account of the nft
         uint256 _fuel = IERC20(address(this)).balanceOf(_nftContractAddress);
         // if the balance of the nft contract account is zero, fuel health is set as 1 and if otherwise the balance is set
@@ -178,9 +201,11 @@ contract RewardContract is IMEP804, ERC20, ReentrancyGuard {
      * @dev See {IMEP-804 -> submitReward}
      * Emits an {RewardSubmitted} event indicating the reward for each sensor.
      */
-    function submitReward(address _appContractAddress, address _sensorProfileAddress, address _nftAccountAddress)
-        external
-    {
+    function submitReward(
+        address _appContractAddress,
+        address _sensorProfileAddress,
+        address _nftAccountAddress
+    ) external {
         // compares the contract address set at the point of deploying the contract with the address submitted
         if (_appContractAddress != applicationContractAddress) {
             revert WRONG_APPLICATION_ADDRESS();
@@ -189,32 +214,43 @@ contract RewardContract is IMEP804, ERC20, ReentrancyGuard {
         string memory _tier = IMEP803(_sensorProfileAddress).getTier();
 
         // get the sensor data like fuel health and mining power from the 2D mapping
-        SensorMiningData memory _sensorData = miningData[_tier][_nftAccountAddress];
+        HealthMining storage _sensorData = healthMiningPower[_tier][
+            _nftAccountAddress
+        ];
+
+        // mapping(string => mapping(address => HealthMining)) public healthMiningPower
         uint256 _health = _sensorData.healthFactor;
         uint256 _miningPower = _sensorData.miningPower;
+        uint256 _totalMiningPower = tierTokenAllocation[_tier];
 
         // calculate the reward for the sensor using this formular
         /// @dev the 1e10 and 1e18 is added to prevent floating as Solidity doesn't yet
-        uint256 rewardForSensor =
-            ((_health * _miningPower) * 1e10) / (totalMiningPower * (poolAmountOfThisCycle / 1e18));
+        uint256 rewardForSensor = (_health * _miningPower * poolAmountOfThisCycle) / (_totalMiningPower);
         // the reward for wach sensor is set into the reward mapping
-        reward[_nftAccountAddress] = rewardForSensor * 1e8;
+        reward[_nftAccountAddress] = rewardForSensor * 1e18;
         // emits an event
-        emit RewardSubmitted(_nftAccountAddress, _miningPower, totalMiningPower);
+        emit RewardSubmitted(
+            _nftAccountAddress,
+            _miningPower,
+            totalMiningPower
+        );
     }
 
     /**
      * @dev See {IMEP-804 -> claimReward}
      * Emits an {RewardSubmitted} event indicating the reward for each sensor.
      */
-    function claimReward(address _appContractAddress, address _nftAccountAddress) external payable nonReentrant {
+    function claimReward(
+        address _appContractAddress,
+        address _nftAccountAddress
+    ) external payable nonReentrant {
         // compares the contract address set at the point of deploying the contract with the address submitted
         if (_appContractAddress != applicationContractAddress) {
             revert WRONG_APPLICATION_ADDRESS();
         }
         // check if the reward of the nft account is greater than zero
         if (reward[_nftAccountAddress] == 0) {
-            revert ZERO_AMOUNT();
+            revert ZERO_REWARD_AMOUNT();
         }
 
         address _beneficiary = msg.sender;

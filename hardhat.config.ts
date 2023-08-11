@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@cartesi/hardhat-verify-deployments";
+// import "@nomicfoundation/hardhat-verify";
 
 import "@openzeppelin/hardhat-upgrades";
 import "@typechain/hardhat";
@@ -74,6 +75,14 @@ const config: HardhatUserConfig = {
             // gasPrice: 6000000000000,
             saveDeployments: true,
         },
+        sepolia: {
+            url: "https://eth-sepolia.g.alchemy.com/v2/gSjO4iw0TH4xnWrpobKxM9E-l323GFcP",
+            chainId: 11155111,
+            // accounts: real_accounts,
+            accounts: [process.env.DEPLOYER_KEY] as HttpNetworkAccountsUserConfig | undefined,
+            // gasPrice: 6000000000000,
+            saveDeployments: true,
+        },
     },
     namedAccounts: {
         deployer: 0,
@@ -81,9 +90,6 @@ const config: HardhatUserConfig = {
         nopermission: 2
     },
     etherscan: {
-        // apiKey: {
-        //     mxc_testnet: "testr",
-        // },
         apiKey: process.env.ETHERSCAN_API_KEY,
         customChains: [
             {

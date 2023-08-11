@@ -21,7 +21,6 @@ async function main() {
     `ISOApplication deployed to ${isoApplication.address}`
   );
 
-
   // Catch the ISOApplicationDeployed event and its values
   const isoApplicationTxnReceipt: ContractReceipt = await isoApplication.deployTransaction.wait();
   const isoApplicationEvents = isoApplicationTxnReceipt.events;
@@ -52,7 +51,6 @@ async function main() {
   console.log("Check owner of contract Log: ", ownerOfContractTxn);
 
   // CHANGE OWNER OF CONTRACT
-  // const changeOwnerTxn = await isoApplication.changeOwner(otherAccount.address);
   const changeOwnerTxn = await isoApplication.changeOwner('0x8D5b0F873c00F8e8EA7FEF0C24DBdC5Ac2758D26');
   const changeOwnerTxnReceipt: ContractReceipt = await changeOwnerTxn.wait();
 

@@ -2,9 +2,9 @@ import { ContractReceipt } from "ethers";
 import { ethers, run } from "hardhat";
 
 async function main() {
-  const ApplicationAddress = '0x68214FdEf3cb834457A29C74978639fa7da68864';
+  const ApplicationAddress = '0x9631ec0491a60d500a10d61e08ac17d00823Ff39';
   const PROFILE_URI = "https://gateway.pinata.cloud/ipfs/Qmav5akQh5ZzWZ1UKAQ66LaXZZFnYqC3GYw6xVVJiXfQfu"
-  const TIER = "child";
+  const TIER = "adult";
   const SensorProfile = await ethers.getContractFactory("SensorProfile");
   const sensorProfile = await SensorProfile.deploy(ApplicationAddress, PROFILE_URI, TIER);
 

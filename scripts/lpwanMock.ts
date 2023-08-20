@@ -1,8 +1,10 @@
 import { ContractReceipt } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, run } from "hardhat";
 
 async function main() {
-    const ApplicationContractAddress = '0x47bEF8F10F525dC5c1aA2A6C33B33520f61b7011';
+    const ApplicationContractAddress = '0x9631ec0491a60d500a10d61e08ac17d00823Ff39';
+
+    const [owner, otherAccount] = await ethers.getSigners();
 
     const TOKEN_NAME = 'Walk Sensor Provisioning';
     const TOKEN_SYMBOL = 'WSP'
@@ -13,6 +15,12 @@ async function main() {
     const lpwanMock = await LPWANMock.deploy();
 
     await lpwanMock.deployed();
+
+    console.log('Verifying LPWAN MOCK Contract.....');
+    await run("verify:verify", {
+        address: lpwanMock.address,
+        constructorArguments: []
+    })
 
     console.log(
         `LPWAN Mock deployed to ${lpwanMock.address}`
@@ -27,12 +35,20 @@ async function main() {
     const createMEP802Event = createMEP802TxnEvents && createMEP802TxnEvents.find(
         (event) => event.event === "MEP802Created"
     );
-
+    
     // Retrieve the contract addresses
-    const provisioningContractAddress = await lpwanMock.provisioningContractAddress(1);
+    const sensorNFTContractAddress = await lpwanMock.sensorNFTContractAddresses(1);
+    
+    console.log('Verifying SENSOR NFT Contract Contract.....');
+    await run("verify:verify", {
+        address: sensorNFTContractAddress,
+        constructorArguments: [
+            TOKEN_NAME, TOKEN_SYMBOL, AMOUNT_1000, BLOCK_1, ApplicationContractAddress, lpwanMock.address
+        ]
+    })
 
-    console.log("Create Application Log: ", createMEP802Event?.args);
-    console.log("Provisioning Contract Address: ", provisioningContractAddress);
+    console.log("Create mep802 Log: ", createMEP802Event?.args);
+    console.log("SENSOR NFT Contract Address: ", sensorNFTContractAddress);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

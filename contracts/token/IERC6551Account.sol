@@ -9,7 +9,7 @@ interface IERC6551AccountProxy {
 interface IERC6551Account {
     event TransactionExecuted(address indexed target, uint256 indexed value, bytes data);
 
-    receive() external payable;
+    // receive() external payable;
 
     function executeCall(address to, uint256 value, bytes calldata data) external payable returns (bytes memory);
 

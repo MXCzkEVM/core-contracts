@@ -33,6 +33,10 @@ contract SensorProfile is IMEP803 {
         emit SensorProfileDeployed(address(this), _appContractAddress, _sensorProfileURI);
     }
 
+    function getTier() external view returns (string memory) {
+        return tier;
+    }
+
     /**
      * @dev Returns the keccak256 hash of the input metadata link string
      * @param _profileURI The metadata link string to be hashed

@@ -42,7 +42,7 @@ library Bytecode {
      * @param _start number of bytes of code to skip on read
      * @param _end index before which to end extraction
      * @return oCode read from `_addr` deployed bytecode
-     * 
+     *
      * Forked from: https://gist.github.com/KardanovIR/fe98661df9338c842b4a30306d507fbd
      */
     function codeAt(address _addr, uint256 _start, uint256 _end) internal view returns (bytes memory oCode) {

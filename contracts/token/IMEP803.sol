@@ -9,4 +9,7 @@ interface IMEP803 {
         address indexed _appContractAddress,
         string indexed _sensorProfileURI
     );
+
+    /// @dev this function returns the tier for the profile
+    function getTier() external view returns (string memory);
 }

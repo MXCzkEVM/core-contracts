@@ -74,6 +74,8 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
 
     mapping(string => uint256) private _SNCodeTokenIds;
 
+    mapping(uint256 => string) private _TokenIdRegionId;
+
     function initialize(string memory name_, string memory symbol_) external initializer {
         __Controllable_init();
         _slotLimits = [10, 50];
@@ -81,7 +83,7 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         __ERC721_init(name_, symbol_);
     }
 
-    function mint(address to, string memory _SNCode) external onlyController {
+    function mint(address to, string memory _SNCode,string memory _regionID) external onlyController {
         if (bytes(_SNCode).length == 0) {
             revert ERC721TokenAlreadyMinted();
         }
@@ -100,6 +102,7 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         _safeMint(to, tokenId);
         _SNCodes[tokenId] = _SNCode;
         _SNCodeTokenIds[_SNCode] = tokenId;
+        _TokenIdRegionId[tokenId] = _regionID;
     }
 
     function setBaseURI(string memory baseURI_) external onlyController {
@@ -220,8 +223,16 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         return _exitFee;
     }
 
-    function getBalance() external view returns (uint256) {
-        return address(this).balance;
+    function getMEP1004TokenIds(address _owner) external view returns (uint256[] memory) {
+        uint256[] memory result = new uint256[](balanceOf(_owner));
+        for (uint256 i = 0; i < result.length; i++) {
+            result[i] = tokenOfOwnerByIndex(_owner, i);
+        }
+        return result;
+    }
+
+    function getMEP1004TokenRegionId(uint256 _tokenId) external view returns (string memory) {
+        return _TokenIdRegionId[_tokenId];
     }
 
     function setName(uint256 _tokenId, uint256 _nameWrapperTokenId) external {
@@ -417,7 +428,7 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         // String does not contain substring
     }
 
-    uint256[37] private __gap;
+    uint256[36] private __gap;
 }
 
 contract ProxiedMEP1004Token is Proxied, UUPSUpgradeable, MEP1004Token {

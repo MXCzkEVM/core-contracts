@@ -15,6 +15,11 @@ library LibAddress {
         require(success, "ETH transfer failed");
     }
 
+    function sendEtherUnchecked(address to, uint256 amount) internal {
+        (bool success,) = payable(to).call{value: amount}("");
+        require(success, "ETH transfer failed");
+    }
+
     function codeHash(address addr) internal view returns (bytes32 codehash) {
         assembly {
             codehash := extcodehash(addr)

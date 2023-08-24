@@ -7,29 +7,39 @@ import {ControllableUpgradeable} from "../common/ControllableUpgradeable.sol";
 import {Proxied} from "hardhat-deploy/solc_0.8/proxy/Proxied.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-// SensorToken contract inherits from ERC20Permit and Ownable
 contract SensorToken is ControllableUpgradeable, ERC20PermitUpgradeable {
-    // Define the maximum supply as 150,000,000, adjusted for the contract's decimals
-    uint public MAX_SUPPLY = 150000000 * (10 ** uint(decimals()));
     // Define the interval for halving every one million blocks
-    uint public HALVING_INTERVAL = 1000000;
+    uint public HALVING_INTERVAL;
+
+    uint public MAX_HALVING_CYCLE;
+
+    uint private FINAL_REWARD_BLOCK;
     // Define the initial reward as 52.5, adjusted for the contract's decimals
-    uint public initialReward = 525 * (10 ** uint(decimals())) / 10;
+    uint public initialReward;
     // Record the block number of the last halving
     uint public initBlock;
-    // Special addresses that balance dynamics are not applied to
-    address[] public specialAddresses;
 
     uint public lastUpdateBlock;
 
-    function initialize(address[] memory _specialAddresses) external initializer {
+    // Special addresses that balance dynamics
+    address[] private specialAddresses;
+
+    uint256[43] private __gap;
+
+    function initialize(address[] memory _specialAddresses, address recipient) external initializer {
+        require(_specialAddresses.length > 0, "special address length");
+
         __Controllable_init();
-        __ERC20_init("Sensor", "SENSOR");
-        __ERC20Permit_init("Sensor");
-        _mint(msg.sender, 45000000 * (10 ** uint(decimals())));
+        __ERC20_init("Sensor Token", "SENSOR");
+        __ERC20Permit_init("Sensor Token");
+        HALVING_INTERVAL = 1000000;
+        MAX_HALVING_CYCLE = 20;
+        initialReward = 525 * (10 ** uint(decimals())) / 10;
         initBlock = block.number;
+        FINAL_REWARD_BLOCK = block.number + MAX_HALVING_CYCLE * HALVING_INTERVAL;
         lastUpdateBlock = block.number;
         specialAddresses = _specialAddresses;
+        _mint(recipient, 45000000 * (10 ** decimals()));
     }
 
     // set the special addresses
@@ -37,8 +47,15 @@ contract SensorToken is ControllableUpgradeable, ERC20PermitUpgradeable {
         specialAddresses = _specialAddresses;
     }
 
+    function getSpecialAddresses() external view returns (address[] memory) {
+        return specialAddresses;
+    }
+
     // Function to dynamically calculate the current reward
     function getCurrentReward() public view returns (uint) {
+        if(block.number >= FINAL_REWARD_BLOCK) {
+            return 0;
+        }
         // Calculate how many halving intervals have passed since the last halving
         uint halvingsSinceLast = (block.number - initBlock) / HALVING_INTERVAL;
         uint dynamicReward = initialReward;
@@ -52,34 +69,32 @@ contract SensorToken is ControllableUpgradeable, ERC20PermitUpgradeable {
     }
 
     // update the balance of the special addresses
-    function update() private  {
+    function update() public {
         if(lastUpdateBlock >= block.number) {
             return;
         }
         uint increase = _getIncrease();
         if(increase != 0) {
+            lastUpdateBlock = block.number;
             _mint(specialAddresses[0], increase);
         }
-        lastUpdateBlock = block.number;
     }
 
     // get special address should increase
     function _getIncrease() private view returns (uint) {
-        if(lastUpdateBlock == block.number) {
+        uint gap = block.number - lastUpdateBlock;
+        if(gap == 0) {
             return 0;
         }
-        uint gap = block.number - lastUpdateBlock;
         uint round = gap / HALVING_INTERVAL;
         uint inRound = gap % HALVING_INTERVAL;
         uint increase;
         uint currentReward = getCurrentReward();
 
-        if(round > 1) {
-            for (uint i; i < round;) {
-                increase += currentReward * round * HALVING_INTERVAL;
-                unchecked{
-                    i++;
-                }
+        for (uint i = 0; i < round;) {
+            increase += currentReward * ((round - i) ** 2) * HALVING_INTERVAL;
+            unchecked{
+                i++;
             }
         }
         if(inRound > 0) {
@@ -103,15 +118,11 @@ contract SensorToken is ControllableUpgradeable, ERC20PermitUpgradeable {
         return super.totalSupply() + _getIncrease();
     }
 
-    // Override decimals function to set decimals to 8
-    function decimals() public pure override returns (uint8) {
-        return 8;
-    }
-
     function _beforeTokenTransfer(address from, address to, uint amount) internal override {
         if(from == specialAddresses[0] || to == specialAddresses[0]) {
             update();
         }
+        super._beforeTokenTransfer(from, to, amount);
     }
 }
 

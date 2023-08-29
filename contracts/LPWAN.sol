@@ -155,7 +155,7 @@ ControllableUpgradeable, ReentrancyGuard
     }
 
     // admin transfer approve token to spender
-    function approveToken(address token, address spender, uint amount) external nonReentrant onlyController returns (bool) {
+    function approveToken(address token, address spender, uint amount) external onlyController returns (bool) {
         return IERC20(token).approve(spender, amount);
     }
 

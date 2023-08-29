@@ -86,6 +86,20 @@ contract LPWANTest is Test {
         // duplicate claim
         lpwan.claimSupernodeReward(Alice, totalReward, false, testSigner, signature);
         assertEq(Alice.balance, totalReward);
+
+        totalReward = 120000;
+        hash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                lpwan.DOMAIN_SEPARATOR(),
+                keccak256(abi.encode(lpwan.PERMIT_TYPEHASH2(), totalReward, testSigner, address(Alice)))
+            )
+        );
+
+        (v, r, s) = vm.sign(privateKey, hash);
+        signature = abi.encodePacked(r, s, v);
+        lpwan.claimSupernodeReward(Alice, totalReward, false, testSigner, signature);
+        assertEq(Alice.balance, totalReward);
     }
 
     function testLPWANClaimSuperNodeRewardBurn() public {

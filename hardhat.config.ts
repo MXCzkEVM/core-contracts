@@ -30,7 +30,7 @@ const config: HardhatUserConfig = {
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 10000,
+                runs: 200,
             },
             outputSelection: {
                 "*": {
@@ -68,7 +68,7 @@ const config: HardhatUserConfig = {
             saveDeployments: true,
             chainId: 5167003,
             // accounts: real_accounts,
-            gas: 6000000,
+            gasPrice: 6000000000000,
             accounts: [process.env.DEPLOYER_KEY] as HttpNetworkAccountsUserConfig | undefined,
             url: process.env.MXC_TESTNET_URL || "",
         },

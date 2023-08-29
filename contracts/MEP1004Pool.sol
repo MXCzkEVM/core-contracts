@@ -12,7 +12,12 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SSTORE2} from "./libs/sstore2/SSTORE2.sol";
 import {MEP1004Token} from "./token/MEP1004Token.sol";
 import {SignatureCheckerUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerUpgradeable.sol";
+import {SensorToken} from "./token/SensorToken.sol";
 
+
+interface TreasuryApproveToken {
+    function approveToken(address token, address spender, uint amount) external returns (bool);
+}
 
 error RewardExpired();
 error InvalidLength();
@@ -25,14 +30,15 @@ error TokenExceeds();
 error TransferFailed();
 error InvalidSignature();
 error InvalidEpochNumber();
+error SensorBalanceRequired();
 
 contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
 
     using LibAddress for address;
 
-    event ReleaseEpoch(uint indexed epochNumber, bytes32 rewardMerkleRoot);
+    event ReleaseEpoch(uint indexed epochNumber, bytes32 indexed rewardMerkleRoot, address onlineStatusPointer);
 
-    event ClaimedReward(address indexed miner, uint latestEpochNumber);
+    event ClaimedReward(address indexed miner, uint indexed latestEpochNumber, RewardInfo totalRewardInfo);
 
     struct RewardInfo {
         address[] token;
@@ -41,19 +47,25 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
 
     struct RewardTokenInfo {
         address token;
-        address permitOwner;
+        address permitOwner; // zero address no need to permit
         uint amountPerEpoch;
     }
 
-    bytes32 private PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender)");
+    struct ProofArray {
+        bytes32[] proofs;
+    }
 
-    uint256 private INITIAL_CHAIN_ID;
+    uint private INITIAL_CHAIN_ID;
 
     bytes32 private INITIAL_DOMAIN_SEPARATOR;
+
+    address public treasury;
 
     IERC6551Registry public ERC6551Registry;
 
     MEP1004Token public MEP1004Token_;
+
+    SensorToken public sensorToken;
 
     address public ERC6551AccountImplAddr;
 
@@ -69,106 +81,141 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
 
     mapping(uint => uint) public epochReleaseTime;
 
-    mapping(address => uint) public minerClaimedEpoch;
+    mapping(address => mapping(uint => bool)) private minerClaimedEpoch;
 
     mapping(uint => address) private minerEpochOnlineStatusPointer;
 
     mapping (address => address[]) private userSelectedToken;
 
+    uint[34] private __gap;
+
     function initialize(
+        address _treasury,
         address _ERC6551Registry,
         address _ERC6551AccountImplAddr,
         address _MEP1004Addr,
+        address _sensorToken,
         uint _epochExpiredTime,
         uint _maxSelectToken
     ) external initializer {
+        __Controllable_init();
+        INITIAL_CHAIN_ID = block.chainid;
+        INITIAL_DOMAIN_SEPARATOR = _computeDomainSeparator();
+
+        treasury = _treasury;
         ERC6551Registry = IERC6551Registry(_ERC6551Registry);
         ERC6551AccountImplAddr = _ERC6551AccountImplAddr;
         MEP1004Token_ = MEP1004Token(_MEP1004Addr);
+        sensorToken = SensorToken(_sensorToken);
         maxSelectToken = _maxSelectToken;
         epochExpiredTime = _epochExpiredTime;
-
-        INITIAL_CHAIN_ID = block.chainid;
-        INITIAL_DOMAIN_SEPARATOR = _computeDomainSeparator();
-        __Controllable_init();
     }
 
+    function PERMIT_TYPEHASH() public view returns (bytes32) {
+        return keccak256("Permit(address owner,address spender)");
+    }
 
-    function claimRewards(uint MEP1004TokenId, address to, bytes32[][] calldata proofs, uint[] calldata epochIds, RewardInfo[] calldata rewards) nonReentrant external {
+    function DOMAIN_SEPARATOR() public view returns (bytes32) {
+        return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : _computeDomainSeparator();
+    }
+
+    function claimRewards(uint MEP1004TokenId, address to, ProofArray[] calldata proofs, uint[] calldata epochIds, RewardInfo[] calldata rewards) nonReentrant external {
         if(proofs.length != epochIds.length || proofs.length != rewards.length || proofs.length == 0) {
             revert InvalidLength();
         }
-        if(msg.sender != _getMEP1004TokenERC6551Account(MEP1004TokenId)) {
+        if(_msgSender() != _getMEP1004TokenERC6551Account(MEP1004TokenId)) {
             revert InvalidTokenOwnership();
         }
 
-        uint tokenCount;
-
-        address[] memory uniqueTokens = new address[](rewardTokens.length + 2); // +2 for $SENSOR and $XMXC
-        uint[] memory totalAmounts = new uint[](rewardTokens.length + 2);
+        RewardInfo memory totalRewardInfo = RewardInfo(new address[](rewardTokens.length + 1), new uint[](rewardTokens.length + 1)); // +1 for sensor token
         uint latestEpochNumber;
+        uint tokenCount;
         for (uint i = 0; i < proofs.length; i++) {
-            if(epochIds[i] <= latestEpochNumber) {
-                revert InvalidProof();
+            if(minerClaimedEpoch[msg.sender][epochIds[i]]) {
+                revert AlreadyClaim();
             }
             if(epochReleaseTime[epochIds[i]] + epochExpiredTime < block.timestamp) {
                 revert RewardExpired();
             }
-
             bytes32 rewardHash = keccak256(abi.encode(MEP1004TokenId, epochIds[i], rewards[i]));
-            if (!_verify(proofs[i], epochIds[i], rewardHash)) {
+            if (!_verify(proofs[i].proofs, rewardMerkleRoots[epochIds[i]], rewardHash)) {
                 revert InvalidProof();
             }
 
             for (uint j = 0; j < rewards[i].token.length; j++) {
                 bool found = false;
                 for (uint k = 0; k < tokenCount; k++) {
-                    if (uniqueTokens[k] == rewards[i].token[j]) {
-                        totalAmounts[k] += rewards[i].amount[j];
+                    if (totalRewardInfo.token[k] == rewards[i].token[j]) {
+                        totalRewardInfo.amount[k] += rewards[i].amount[j];
                         found = true;
                         break;
                     }
                 }
 
                 if (!found) {
-                    uniqueTokens[tokenCount] = rewards[i].token[j];
-                    totalAmounts[tokenCount] = rewards[i].amount[j];
+                    totalRewardInfo.token[tokenCount] = rewards[i].token[j];
+                    totalRewardInfo.amount[tokenCount] = rewards[i].amount[j];
                     tokenCount++;
                 }
             }
-            latestEpochNumber = epochIds[i];
+            minerClaimedEpoch[msg.sender][epochIds[i]] = true;
+            if(epochIds[i] > latestEpochNumber) {
+                latestEpochNumber = epochIds[i];
+            }
         }
 
         for (uint i = 0; i < tokenCount; i++) {
-            if(IERC20(uniqueTokens[i]).transfer(to, totalAmounts[i])) {
-                revert TransferFailed();
+            if(totalRewardInfo.amount[i] != 0) {
+                if(!IERC20(totalRewardInfo.token[i]).transferFrom(treasury, to, totalRewardInfo.amount[i])) {
+                    revert TransferFailed();
+                }
             }
         }
 
-        minerClaimedEpoch[msg.sender] = latestEpochNumber;
-        emit ClaimedReward(msg.sender, latestEpochNumber);
+        emit ClaimedReward(msg.sender, latestEpochNumber, totalRewardInfo);
     }
 
     function selectToken(address[] memory tokens, bytes[] calldata signatures) external {
-        if(tokens.length != signatures.length || tokens.length == 0) {
+        if(tokens.length == 0 || tokens.length != signatures.length) {
             revert InvalidLength();
         }
+        if(tokens.length > maxSelectToken || tokens.length > rewardTokens.length) {
+            revert TokenExceeds();
+        }
+        if(sensorToken.balanceOf(msg.sender) == 0) {
+            revert SensorBalanceRequired();
+        }
+        uint foundNum;
+        bool found;
+        uint j;
         for(uint i = 0; i < rewardTokens.length; i++) {
-            bool found;
-            for(uint j = 0; j < tokens.length; i++) {
-                if(tokens[j] == rewardTokens[i].token) {
+            found = false;
+            j = 0;
+            while(j < tokens.length) {
+                if(rewardTokens[i].token == tokens[j]) {
                     found = true;
                     break;
                 }
+                ++j;
             }
             if(!found) {
-                revert TokenNotFound();
+                continue;
             }
-
+            if(rewardTokens[i].permitOwner == address(0)) {
+                ++foundNum;
+                continue;
+            }
             bytes32 _hash = _permitHash(rewardTokens[i].permitOwner, msg.sender);
-            if (!SignatureCheckerUpgradeable.isValidSignatureNow(rewardTokens[i].permitOwner, _hash, signatures[i])) {
+            if (!SignatureCheckerUpgradeable.isValidSignatureNow(rewardTokens[i].permitOwner, _hash, signatures[j])) {
                 revert InvalidSignature();
             }
+            ++foundNum;
+            if(foundNum == tokens.length) {
+                break;
+            }
+        }
+        if(foundNum != tokens.length) {
+            revert TokenExceeds();
         }
 
         userSelectedToken[msg.sender] = tokens;
@@ -182,25 +229,34 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
         if(MEP1004TokenId > bitMap.length * 8) {
             return false;
         }
-        uint256 byteIndex = MEP1004TokenId / 8;
-        uint256 bitIndex = MEP1004TokenId % 8;
-        return (uint8(bitMap[byteIndex]) & (1 << bitIndex)) != 0;
+        uint byteIndex = MEP1004TokenId / 8;
+        uint bitIndex = MEP1004TokenId % 8;
+        if (bitIndex == 0 && byteIndex > 0) {
+            byteIndex -= 1;
+        }
+        return (uint8(bitMap[byteIndex]) & uint8(1 << bitIndex)) != 0;
     }
 
-    function DOMAIN_SEPARATOR() public view returns (bytes32) {
-        return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : _computeDomainSeparator();
+    function getMinerClaimedEpochs(uint MEP1004TokenId, uint[] calldata epochNumbers) external view returns (bool[] memory) {
+        bool[] memory result = new bool[](epochNumbers.length);
+        for (uint i = 0; i < epochNumbers.length; i++) {
+            result[i] = minerClaimedEpoch[_getMEP1004TokenERC6551Account(MEP1004TokenId)][epochNumbers[i]];
+        }
+        return result;
     }
 
     function releaseEpoch(uint epochNumber, bytes32 rewardMerkleRoot, bytes memory statusBitMap) external onlyController {
         if(epochNumber != currentEpoch + 1) {
-            revert InvalidEpochNumber();
+            if(currentEpoch != 0) {
+                revert InvalidEpochNumber();
+            }
         }
-        epochNumber++;
         currentEpoch = epochNumber;
         epochReleaseTime[epochNumber] = block.timestamp;
         rewardMerkleRoots[epochNumber] = rewardMerkleRoot;
-        minerEpochOnlineStatusPointer[epochNumber] = SSTORE2.write(statusBitMap);
-        emit ReleaseEpoch(epochNumber, rewardMerkleRoot);
+        address pointer = SSTORE2.write(statusBitMap);
+        minerEpochOnlineStatusPointer[epochNumber] = pointer;
+        emit ReleaseEpoch(epochNumber, rewardMerkleRoot, pointer);
     }
 
     function setMaxSelectToken(uint _maxSelectToken) external onlyController {
@@ -213,12 +269,14 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
                 revert TokenExist();
             }
         }
+        TreasuryApproveToken(treasury).approveToken(token, address(this), type(uint).max);
         rewardTokens.push(RewardTokenInfo(token, permitOwner, amountPerEpoch));
     }
 
     function removeRewardToken(address token) external onlyController {
         for (uint i = 0; i < rewardTokens.length; i++) {
             if (rewardTokens[i].token == token) {
+                TreasuryApproveToken(treasury).approveToken(token, address(this), 0);
                 rewardTokens[i] = rewardTokens[rewardTokens.length - 1];
                 rewardTokens.pop();
                 return;
@@ -227,7 +285,7 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
         revert TokenNotFound();
     }
 
-    function setRewardTokenAmount(address token, address permitOwner, uint amountPerEpoch) external onlyController {
+    function setRewardToken(address token, address permitOwner, uint amountPerEpoch) external onlyController {
         for (uint i = 0; i < rewardTokens.length; i++) {
             if (rewardTokens[i].token == token) {
                 rewardTokens[i] = RewardTokenInfo(token, permitOwner, amountPerEpoch);
@@ -237,7 +295,22 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
     }
 
     function getUserSelectedToken(address account) external view returns (address[] memory) {
-        return userSelectedToken[account];
+        address[] memory tokens;
+        uint tokenCount;
+        for (uint i = 0; i < rewardTokens.length; i++) {
+            for (uint j = 0; j < userSelectedToken[account].length; j++) {
+                if (rewardTokens[i].token == userSelectedToken[account][j]) {
+                    tokenCount++;
+                    tokens[tokenCount] = rewardTokens[i].token;
+                    break;
+                }
+            }
+        }
+        address [] memory result = new address[](tokenCount);
+        for (uint i = 0; i < tokenCount; i++) {
+            result[i] = tokens[i];
+        }
+        return tokens;
     }
 
     function getRewardTokenInfo() external view returns (RewardTokenInfo[] memory) {
@@ -252,7 +325,7 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR(),
-                keccak256(abi.encode(PERMIT_TYPEHASH, _owner, _spender))
+                keccak256(abi.encode(PERMIT_TYPEHASH(), _owner, _spender))
             )
         );
     }
@@ -260,7 +333,7 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
     function _computeDomainSeparator() private view returns (bytes32) {
         return keccak256(
             abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256("EIP712Domain(string name,string version,uint chainId,address verifyingContract)"),
                 keccak256(bytes("MEP1004Pool")),
                 keccak256(bytes("1")),
                 block.chainid,
@@ -273,9 +346,10 @@ contract MEP1004Pool is ControllableUpgradeable, ReentrancyGuard {
         return ERC6551Registry.account(ERC6551AccountImplAddr, block.chainid, address(MEP1004Token_), MEP1004TokenId, 0);
     }
 
-    function _verify(bytes32[] calldata proof, uint epochId, bytes32 rewardHash) private view returns (bool) {
-        bytes32 leaf = keccak256(abi.encode(msg.sender, rewardHash));
-        return MerkleProof.verify(proof, rewardMerkleRoots[epochId], leaf);
+    function _verify(bytes32[] calldata proof, bytes32 merkleRoot, bytes32 rewardHash) private view returns (bool) {
+        bytes32 leaf = keccak256(abi.encode(_msgSender(), rewardHash));
+        bool result = MerkleProof.verifyCalldata(proof, merkleRoot, leaf);
+        return result;
     }
 
 }

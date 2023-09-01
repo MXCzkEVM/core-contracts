@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: CC0-1.0
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
 import "../MEP802.sol";
@@ -20,7 +20,7 @@ contract LPWANMock {
         owner = msg.sender;
     }
 
-    // only owner modifier
+    ///@dev only owner modifier
     modifier onlyOwner() {
         require(msg.sender == owner, "You can't perform this transaction");
         _;
@@ -61,7 +61,9 @@ contract LPWANMock {
         string memory _xToEarnFormulaJSON,
         string memory _name,
         string memory _symbol,
-        uint256 _totalRewardAmount
+        uint256 _totalRewardAmount,
+        bytes32 _merkleRoot,
+        uint256 _count
     ) external {
         mep804Id++;
 
@@ -76,7 +78,9 @@ contract LPWANMock {
                 _xToEarnFormulaJSON,
                 _name,
                 _symbol,
-                _totalRewardAmount
+                _totalRewardAmount,
+                _merkleRoot,
+                _count
             )
         );
 

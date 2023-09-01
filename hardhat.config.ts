@@ -79,7 +79,7 @@ const config: HardhatUserConfig = {
             chainId: 5167003,
             // accounts: real_accounts,
             accounts: [process.env.DEPLOYER_KEY] as HttpNetworkAccountsUserConfig | undefined,
-            // gasPrice: 6000000000000,
+            gasPrice: 6000000000000,
             saveDeployments: true,
         },
         sepolia: {

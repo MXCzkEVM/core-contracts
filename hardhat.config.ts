@@ -99,6 +99,12 @@ const config: HardhatUserConfig = {
             },
         ],
     },
+    typechain: {
+        target: "ethers-v5",
+    },
+    paths: {
+        sources: "./contracts",
+    },
 };
 
 export default config;

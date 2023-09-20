@@ -7,7 +7,7 @@ import "../contracts/proxy/UUPSProxy.sol";
 import "../contracts/token/SensorToken.sol";
 import "../contracts/ERC6551/ERC6551Registry.sol";
 import "../contracts/ERC6551/ERC6551AccountImplementation.sol";
-import "../contracts/MEP1004Pool.sol";
+import "../contracts/MEP2542.sol";
 import "../contracts/token/MEP1004Token.sol";
 import "../contracts/token/XMXCToken.sol";
 import "../contracts/token/XMigrateToken.sol";
@@ -20,7 +20,7 @@ import "../contracts/token/MEP1002NamingToken.sol";
 import {MEP1002Token, ProxiedMEP1002Token} from "../contracts/token/MEP1002Token.sol";
 
 
-contract MEP1004PoolTest is Test {
+contract MEP2542Test is Test {
 
     LPWAN public lpwan;
 
@@ -36,7 +36,7 @@ contract MEP1004PoolTest is Test {
 
     MaxisCoin public maxisCoin;
 
-    MEP1004Pool public mep1004Pool;
+    MEP2542 public mep2542;
 
     ERC6551Registry public ERC6551RegistryProxy;
 
@@ -61,8 +61,8 @@ contract MEP1004PoolTest is Test {
         uint amount = 16666 * 1e18;
         uint _maxSelectToken = 2;
 
-        address mep1004PoolAddr = deployProxy("MEP1004Pool", address(new ProxiedMEP1004Pool()), bytes.concat(
-            MEP1004Pool.initialize.selector,
+        address mep2542Addr = deployProxy("MEP2542", address(new ProxiedMEP2542()), bytes.concat(
+            MEP2542.initialize.selector,
             abi.encode(
                 address(lpwan),
                 address(ERC6551RegistryProxy),
@@ -73,12 +73,14 @@ contract MEP1004PoolTest is Test {
                 _maxSelectToken
             )
         ));
-        mep1004Pool = MEP1004Pool(mep1004PoolAddr);
+        mep2542 = MEP2542(mep2542Addr);
 
-        lpwan.setController(address(mep1004Pool), true);
+        lpwan.setController(address(mep2542), true);
+        lpwan.approveToken(address(sensorToken), address(mep2542), type(uint).max);
+        sensorToken.transfer(address(lpwan), 1e25);
 
-        mep1004Pool.addRewardToken(address(gin1689Coin), address(0), amount);
-        mep1004Pool.addRewardToken(address(crabCoin), address(0), amount);
+        mep2542.addRewardToken(address(gin1689Coin), address(0), amount);
+        mep2542.addRewardToken(address(crabCoin), address(0), amount);
 
         mintMEP1004Token();
     }
@@ -86,27 +88,27 @@ contract MEP1004PoolTest is Test {
     function testAddDuplicateRewardToken() public {
         // add duplicate reward token
         vm.expectRevert(TokenExist.selector);
-        mep1004Pool.addRewardToken(address(gin1689Coin), address(0), 1000);
+        mep2542.addRewardToken(address(gin1689Coin), address(0), 1000);
         return;
     }
 
     function testRemoveRewardToken() public {
-        mep1004Pool.removeRewardToken(address(gin1689Coin));
-        assertEq(mep1004Pool.getRewardTokenInfo().length, 1);
+        mep2542.removeRewardToken(address(gin1689Coin));
+        assertEq(mep2542.getRewardTokenInfo().length, 1);
     }
 
     function testAddRewardToken() public {
-        mep1004Pool.addRewardToken(address(maxisCoin), address(0), 1000);
-        assertEq(mep1004Pool.getRewardTokenInfo().length, 3);
+        mep2542.addRewardToken(address(maxisCoin), address(0), 1000);
+        assertEq(mep2542.getRewardTokenInfo().length, 3);
     }
 
     function testUpdateRewardToken() public {
-        mep1004Pool.setRewardToken(address(crabCoin), address(0), 1000);
-        assertEq(mep1004Pool.getRewardTokenInfo()[1].amountPerEpoch, 1000);
+        mep2542.setRewardToken(address(crabCoin), address(0), 1000);
+        assertEq(mep2542.getRewardTokenInfo()[1].amountPerEpoch, 1000);
     }
 
     function testGetRewardToken() public {
-        MEP1004Pool.RewardTokenInfo[] memory rewardTokensInfos = mep1004Pool.getRewardTokenInfo();
+        MEP2542.RewardTokenInfo[] memory rewardTokensInfos = mep2542.getRewardTokenInfo();
         assertEq(rewardTokensInfos.length, 2);
         assertEq(rewardTokensInfos[0].token, address(gin1689Coin));
         assertEq(rewardTokensInfos[1].token, address(crabCoin));
@@ -120,7 +122,7 @@ contract MEP1004PoolTest is Test {
 
         vm.startPrank(Alice);
         vm.expectRevert(SensorBalanceRequired.selector);
-        mep1004Pool.selectToken(tokens, signature);
+        mep2542.selectToken(tokens, signature);
         vm.stopPrank();
     }
 
@@ -133,7 +135,7 @@ contract MEP1004PoolTest is Test {
 
         vm.startPrank(Alice);
         vm.expectRevert(TokenExceeds.selector);
-        mep1004Pool.selectToken(tokens, signature);
+        mep2542.selectToken(tokens, signature);
         vm.stopPrank();
     }
 
@@ -144,25 +146,27 @@ contract MEP1004PoolTest is Test {
 
         bytes[] memory signature = new bytes[](2);
 
-        mep1004Pool.selectToken(tokens, signature);
+        mep2542.selectToken(tokens, signature);
+        assertEq(mep2542.getUserSelectedToken(address(this)).length, 2);
+
     }
 
     function testRevertSelectTokenWithNoSignature() public {
-        mep1004Pool.addRewardToken(address(maxisCoin), address(Alice), 1000);
+        mep2542.addRewardToken(address(maxisCoin), address(Alice), 1000);
         address[] memory tokens = new address[](1);
         tokens[0] = address(maxisCoin);
 
         vm.expectRevert(InvalidSignature.selector);
-        mep1004Pool.selectToken(tokens, new bytes[](1));
+        mep2542.selectToken(tokens, new bytes[](1));
 
-        assertEq(mep1004Pool.getUserSelectedToken(Alice).length, 0);
+        assertEq(mep2542.getUserSelectedToken(Alice).length, 0);
     }
 
     function testSelectTokenWithSignature() public {
             // test private key
         uint256 privateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
         address testSigner = vm.addr(privateKey);
-        mep1004Pool.addRewardToken(address(maxisCoin), testSigner, 1000);
+        mep2542.addRewardToken(address(maxisCoin), testSigner, 1000);
         address[] memory tokens = new address[](1);
         tokens[0] = address(maxisCoin);
 
@@ -170,38 +174,38 @@ contract MEP1004PoolTest is Test {
         bytes32 hash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                mep1004Pool.DOMAIN_SEPARATOR(),
-                keccak256(abi.encode(mep1004Pool.PERMIT_TYPEHASH(), testSigner, address(this)))
+                mep2542.DOMAIN_SEPARATOR(),
+                keccak256(abi.encode(mep2542.PERMIT_TYPEHASH(), testSigner, address(this)))
             )
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash);
         signature[0] = abi.encodePacked(r, s, v);
 
-        mep1004Pool.selectToken(tokens, signature);
+        mep2542.selectToken(tokens, signature);
     }
 
     function testReleaseEpoch() public {
-        mep1004Pool.releaseEpoch(1, bytes32(0), new bytes(0));
-        mep1004Pool.releaseEpoch(2, bytes32(0), new bytes(0));
+        mep2542.releaseEpoch(1, bytes32(0), new bytes(0));
+        mep2542.releaseEpoch(2, bytes32(0), new bytes(0));
     }
 
     function testRevertReleaseWrongEpochNumber() public {
-        mep1004Pool.releaseEpoch(1, bytes32(0), new bytes(0));
+        mep2542.releaseEpoch(1, bytes32(0), new bytes(0));
 
         // same epoch
         vm.expectRevert(InvalidEpochNumber.selector);
-        mep1004Pool.releaseEpoch(1, bytes32(0), new bytes(0));
+        mep2542.releaseEpoch(1, bytes32(0), new bytes(0));
 
         vm.expectRevert(InvalidEpochNumber.selector);
-        mep1004Pool.releaseEpoch(3, bytes32(0), new bytes(0));
+        mep2542.releaseEpoch(3, bytes32(0), new bytes(0));
 
     }
 
     function testClaimRewards() public {
-//        mep1004Pool.releaseEpoch(1, bytes32(0), new bytes(0));
-//        mep1004Pool.claimReward(1, address(gin1689Coin));
-//        mep1004Pool.claimReward(1, address(crabCoin));
+//        mep2542.releaseEpoch(1, bytes32(0), new bytes(0));
+//        mep2542.claimReward(1, address(gin1689Coin));
+//        mep2542.claimReward(1, address(crabCoin));
     }
 
 
@@ -238,6 +242,29 @@ contract MEP1004PoolTest is Test {
         level2[1] = _hashPair(level1[2], level1[2]);
 
         return _hashPair(level2[0], level2[1]);
+    }
+
+    function testRewardInfo() public  {
+        uint tokenId = 1;
+        uint epochNumber = 2;
+        MEP2542.RewardInfo memory reward;
+        reward.token = new address[](1);
+        reward.amount = new uint256[](1);
+    
+        reward.token[0] = address(0x4c313363116cdfFA82B48225a634C359f8681aA5);
+        reward.amount[0] = 0;
+
+        console2.log("reward hash");
+        console2.logBytes32(keccak256(abi.encode(reward)));
+
+        bytes32 rewardhash = keccak256(abi.encode(tokenId, epochNumber, reward));
+        console2.log("reward");
+        console2.logBytes32(rewardhash);
+    
+    }
+
+    function testAbiEncode() public {
+        console2.logBytes(abi.encode("test"));
     }
 
     function getTestRewardMerkleProof(uint epochNumber) private view returns (bytes32[] memory) {
@@ -294,19 +321,21 @@ contract MEP1004PoolTest is Test {
         assertEq(MerkleProof.verify(getTestRewardMerkleProof(1), getTestRewardMerkleRoot(1), getTestRewardMerkleLeaf(1)), true);
     }
 
-    function getTestRewardInfo(uint amount) private view returns (MEP1004Pool.RewardInfo memory reward){
-        reward.token = new address[](2);
+    function getTestRewardInfo(uint amount) private view returns (MEP2542.RewardInfo memory reward){
+        reward.token = new address[](3);
         reward.token[0] = address(gin1689Coin);
         reward.token[1] = address(crabCoin);
-        reward.amount = new uint256[](2);
+        reward.token[2] = address(sensorToken);
+        reward.amount = new uint256[](3);
         reward.amount[0] = amount;
         reward.amount[1] = amount;
+        reward.amount[2] = amount;
     }
 
     function testGetOnlineStatus() public {
         releaseTestEpoch(1);
-        assertEq(mep1004Pool.getMinerOnlineStatus(1, 15), true);
-        assertEq(mep1004Pool.getMinerOnlineStatus(1, 16), false);
+        assertEq(mep2542.getMinerOnlineStatus(1, 15), true);
+        assertEq(mep2542.getMinerOnlineStatus(1, 16), false);
     }
 
     function releaseTestEpoch(uint epochNumber) private {
@@ -319,7 +348,7 @@ contract MEP1004PoolTest is Test {
 
         bitMap[byteIndex] |= bytes1(uint8((1 << bitIndex)));
 
-        mep1004Pool.releaseEpoch(epochNumber, getTestRewardMerkleRoot(epochNumber), bitMap);
+        mep2542.releaseEpoch(epochNumber, getTestRewardMerkleRoot(epochNumber), bitMap);
     }
 
     function mintMEP1004Token() private {
@@ -356,18 +385,19 @@ contract MEP1004PoolTest is Test {
         releaseTestEpoch(1);
         uint mep1004TokenId = 4;
         address account = ERC6551RegistryProxy.createAccount(address(ERC6551AccountImpl), block.chainid, address(mep1004Token), mep1004TokenId, 0, "");
-        MEP1004Pool.ProofArray[] memory proofs = new MEP1004Pool.ProofArray[](1);
+        MEP2542.ProofArray[] memory proofs = new MEP2542.ProofArray[](1);
         proofs[0].proofs = getTestRewardMerkleProof(1);
         uint[] memory epochIds  = new uint[](1);
         epochIds[0] = 1;
 
-        MEP1004Pool.RewardInfo[] memory rewards = new MEP1004Pool.RewardInfo[](1);
+        MEP2542.RewardInfo[] memory rewards = new MEP2542.RewardInfo[](1);
         rewards[0] = getTestRewardInfo(100);
 
         vm.prank(Bob);
-        ERC6551AccountImplementation(payable(account)).executeCall(address(mep1004Pool), 0,
-            abi.encodeWithSelector(mep1004Pool.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+        ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+            abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
         );
+        assertEq(sensorToken.balanceOf(account), 100);
         // assert reward balance
         assertEq(gin1689Coin.balanceOf(account), 100);
         assertEq(crabCoin.balanceOf(account), 100);
@@ -377,17 +407,17 @@ contract MEP1004PoolTest is Test {
         releaseTestEpoch(1);
         uint mep1004TokenId = 4;
         address account = ERC6551RegistryProxy.createAccount(address(ERC6551AccountImpl), block.chainid, address(mep1004Token), mep1004TokenId, 0, "");
-        MEP1004Pool.ProofArray[] memory proofs = new MEP1004Pool.ProofArray[](1);
+        MEP2542.ProofArray[] memory proofs = new MEP2542.ProofArray[](1);
         uint[] memory epochIds  = new uint[](1);
         epochIds[0] = 1;
 
-        MEP1004Pool.RewardInfo[] memory rewards = new MEP1004Pool.RewardInfo[](1);
+        MEP2542.RewardInfo[] memory rewards = new MEP2542.RewardInfo[](1);
         rewards[0] = getTestRewardInfo(100);
 
         vm.startPrank(Bob);
         vm.expectRevert(InvalidProof.selector);
-        ERC6551AccountImplementation(payable(account)).executeCall(address(mep1004Pool), 0,
-            abi.encodeWithSelector(mep1004Pool.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+        ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+            abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
         );
     }
 
@@ -398,20 +428,20 @@ contract MEP1004PoolTest is Test {
 
         uint mep1004TokenId = 4;
         address account = ERC6551RegistryProxy.createAccount(address(ERC6551AccountImpl), block.chainid, address(mep1004Token), mep1004TokenId, 0, "");
-        MEP1004Pool.ProofArray[] memory proofs = new MEP1004Pool.ProofArray[](2);
+        MEP2542.ProofArray[] memory proofs = new MEP2542.ProofArray[](2);
         proofs[0].proofs = getTestRewardMerkleProof(1);
         proofs[1].proofs = getTestRewardMerkleProof(2);
         uint[] memory epochIds  = new uint[](2);
         epochIds[0] = 1;
         epochIds[1] = 2;
 
-        MEP1004Pool.RewardInfo[] memory rewards = new MEP1004Pool.RewardInfo[](2);
+        MEP2542.RewardInfo[] memory rewards = new MEP2542.RewardInfo[](2);
         rewards[0] = getTestRewardInfo(100);
         rewards[1] = getTestRewardInfo(100);
 
         vm.prank(Bob);
-        ERC6551AccountImplementation(payable(account)).executeCall(address(mep1004Pool), 0,
-            abi.encodeWithSelector(mep1004Pool.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+        ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+            abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
         );
         // assert reward balance
         assertEq(gin1689Coin.balanceOf(account), 200);
@@ -425,18 +455,18 @@ contract MEP1004PoolTest is Test {
         vm.warp(block.timestamp + 2 days);
         uint mep1004TokenId = 4;
         address account = ERC6551RegistryProxy.createAccount(address(ERC6551AccountImpl), block.chainid, address(mep1004Token), mep1004TokenId, 0, "");
-        MEP1004Pool.ProofArray[] memory proofs = new MEP1004Pool.ProofArray[](1);
+        MEP2542.ProofArray[] memory proofs = new MEP2542.ProofArray[](1);
         proofs[0].proofs = getTestRewardMerkleProof(1);
         uint[] memory epochIds  = new uint[](1);
         epochIds[0] = 1;
 
-        MEP1004Pool.RewardInfo[] memory rewards = new MEP1004Pool.RewardInfo[](1);
+        MEP2542.RewardInfo[] memory rewards = new MEP2542.RewardInfo[](1);
         rewards[0] = getTestRewardInfo(100);
 
         vm.startPrank(Bob);
         vm.expectRevert(RewardExpired.selector);
-        ERC6551AccountImplementation(payable(account)).executeCall(address(mep1004Pool), 0,
-            abi.encodeWithSelector(mep1004Pool.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+        ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+            abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
         );
     }
 

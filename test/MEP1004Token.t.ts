@@ -179,7 +179,7 @@ describe("MEP1004Token", function () {
             await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
             await expect(await MEP1004Token.tokenURI(1)).to.equal(
-                `https://wannsee-test.mxc.com/1?name=`
+                `https://wannsee-test.mxc.com/1?name=&sn=NEOTEST1235421&regionId=EU863-870&mep1002Id=${h3IndexRes7Big.toString()}`
             );
         });
 

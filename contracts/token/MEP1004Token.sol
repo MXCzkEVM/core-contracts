@@ -75,11 +75,17 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
 
     mapping(string => uint256) private _SNCodeTokenIds;
 
-    mapping(uint256 => string) private _TokenIdRegionId;
+    mapping(uint256 => string) private _tokenIdRegionId;
 
     mapping(uint256 => uint256) private _slotExpiredBlocks;
 
+    mapping(uint256 => int256) private _tokenIdCreateBlockHeight;
+    
+    mapping(uint256 => uint256) private _tokenSlotTimes;
+
     uint256 private _slotExpiredBlockNum;
+
+    uint256[32] private __gap;
 
     function initialize(string memory name_, string memory symbol_) external initializer {
         __Controllable_init();
@@ -107,6 +113,7 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         }
 
         _safeMint(to, tokenId);
+        _tokenIdCreateBlockHeight[tokenId] = int(block.number);
         _SNCodes[tokenId] = _SNCode;
         _SNCodeTokenIds[_SNCode] = tokenId;
         (bool empty, uint256 slotIndex) = getMEP1002EmptySlot(_H3Index, SNCodeType);
@@ -140,6 +147,14 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         _slotExpiredBlockNum = slotExpiredBlockNum_;
     }
 
+    function getSlotExpiredBlockNum() external returns (uint256) {
+        return _slotExpiredBlockNum;
+    }
+
+    function setTokenCreateBlockHeight(uint256 tokenId, int256 blockHeight) external onlyController {
+        _tokenIdCreateBlockHeight[tokenId] = blockHeight;
+    }
+
     function withdrawal(address to) external onlyController {
         payable(to).sendValue(address(this).balance);
     }
@@ -155,10 +170,14 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         _requireMinted(_tokenId);
 
         string memory baseURI = _baseURI();
-
+        string memory tokenUri = string(abi.encodePacked(
+                "?name=", _MEP1004TokenNames[_tokenId], 
+                "&sn=", _SNCodes[_tokenId],
+                "&regionId=", _tokenIdRegionId[_tokenId],
+                "&mep1002Id=", _whereSlot[_tokenId][0].toString()
+            ));
         return bytes(baseURI).length > 0
-            ? string(abi.encodePacked(baseURI, _tokenId.toString(), "?name=", _MEP1004TokenNames[_tokenId]))
-            : "";
+            ? string(abi.encodePacked(baseURI, _tokenId.toString(), tokenUri)) : tokenUri;
     }
 
     function tokenNames(uint256 _tokenId) external view returns (string memory) {
@@ -270,7 +289,15 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
     }
 
     function getMEP1004TokenRegionId(uint256 _tokenId) external view returns (string memory) {
-        return _TokenIdRegionId[_tokenId];
+        return _tokenIdRegionId[_tokenId];
+    }
+
+    function getMEP1004TokenRegionIdBySncode(string memory _SNCode) external view returns(string memory) {
+        return _tokenIdRegionId[_SNCodeTokenIds[_SNCode]];
+    }
+
+    function getMEP1004TokenCreateBlockHeight(uint256 _tokenId) external view returns (int256) {
+        return _tokenIdCreateBlockHeight[_tokenId];
     }
 
     function setName(uint256 _tokenId, uint256 _nameWrapperTokenId) external {
@@ -339,11 +366,11 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
                 revert SlotAlreadyUsed();
             }
         }
-
-        _TokenIdRegionId[_mep1002Id] = _regionID;
         _MEP1002Slot[_mep1002Id][_SNCodeType][_slotIndex] = _tokenId;
-        _slotExpiredBlocks[_tokenId] = block.number + _slotExpiredBlockNum;
+        _slotExpiredBlocks[_tokenId] = block.number + _slotExpiredBlockNum / (2 ** _tokenSlotTimes[_tokenId]);
+        _tokenSlotTimes[_tokenId]++;
         _whereSlot[_tokenId] = [_mep1002Id, _SNCodeType, _slotIndex];
+        _tokenIdRegionId[_tokenId] = _regionID;
         emit InsertToMEP1002Slot(_mep1002Id, _tokenId, _slotIndex, _SNCodeType);
     }
 
@@ -499,7 +526,6 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         // String does not contain substring
     }
 
-    uint256[34] private __gap;
 }
 
 contract ProxiedMEP1004Token is Proxied, UUPSUpgradeable, MEP1004Token {

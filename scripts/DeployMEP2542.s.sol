@@ -56,17 +56,13 @@ contract DeployMEP2542 is Script {
 
 
     function run() external {
-//        vm.startBroadcast(ownerPrivateKey);
-         console.log("owner", owner);
-        vm.startPrank(address(0xC6D7522f7B012b22Bc365C9C43b3DBf13B9aAfF9));
+        vm.startBroadcast(ownerPrivateKey);
         UUPSUpgradeable(address(lpwan)).upgradeTo(address(new ProxiedLPWAN()));
-        vm.stopPrank();
+        vm.stopBroadcast();
 
-        vm.startPrank(address(0x75C4b5c07C6285cb2A14C512EeBaf4A6aed09BE6));
+        vm.startBroadcast(deployerPrivateKey);
         UUPSUpgradeable(address(mep1002Token)).upgradeTo(address(new ProxiedMEP1002Token()));
         UUPSUpgradeable(address(mep1004Token)).upgradeTo(address(new ProxiedMEP1004Token()));
-//        UUPSUpgradeable(address(mep2542)).upgradeTo(address(new ProxiedMEP2542()));
-//        mep2542.getRewardTokenInfo();
 
         ERC6551RegistryProxy = ERC6551Registry(deployProxy("ERC6551Registry", address(new ProxiedERC6551Registry()), ""));
         ERC6551AccountImpl = new ERC6551AccountImplementation();
@@ -97,24 +93,18 @@ contract DeployMEP2542 is Script {
         xMigrate.setController(relayer, true);
         mep1004Token.setSlotExpiredBlockNum(320000);
         mep1004Token.setController(relayer, true);
-//        vm.stopBroadcast();
-//        vm.startBroadcast(deployerPrivateKey);
+
         lpwan.setController(address(mep2542), true);
         lpwan.setController(relayer, true);
         lpwan.approveToken(address(sensorToken),address(mep2542), type(uint).max);
         lpwan.approveToken(address(xMXCToken), relayer, type(uint).max);
 //        // !alert!: check storage slot overwrite
         console2.log(lpwan.getMEP1004Addr());
-//
-//        vm.stopBroadcast();
-//
-//        uint amount = 16666 * 1e18;
-//
-//        vm.startBroadcast(ownerPrivateKey);
+
         mep2542.addRewardToken(address(gin1689Coin), address(0), amount);
         mep2542.addRewardToken(address(crabCoin), address(0), amount);
         mep2542.addRewardToken(address(maxisCoin), address(0), amount);
-//        vm.stopBroadcast();
+        vm.stopBroadcast();
 
     }
 

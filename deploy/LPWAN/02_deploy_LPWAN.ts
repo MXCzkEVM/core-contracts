@@ -3,14 +3,10 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {ethers, upgrades} from "hardhat";
 import {
     ERC1967Proxy, ERC1967Proxy__factory, ERC1967Upgrade__factory, ERC1967UpgradeUpgradeable__factory,
-    ITransparentUpgradeableProxy, ITransparentUpgradeableProxy__factory,
     LPWAN, ProxiedEthMxcPriceAggregator, ProxiedLPWAN, ProxiedLPWAN__factory,
-    ProxiedMEP1004Token, TransparentUpgradeableProxy, TransparentUpgradeableProxy__factory,
+    ProxiedMEP1004Token,
 } from "../../typechain-types";
 import {getNamedSigners} from "hardhat-deploy-ethers/internal/helpers";
-import {
-    TransparentUpgradeableProxyInterface
-} from "../../typechain-types/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy";
 import {getTransparentUpgradeableProxyFactory} from "@openzeppelin/hardhat-upgrades/dist/utils";
 import {Contract} from "ethers";
 
@@ -52,7 +48,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         const LPWAN = (await ProxiedLPWANFactory.attach(proxyAddress).connect(deployer))
         // initialize
-        await LPWAN.initialize(ProxiedMEP1004Token.address, ProxiedEthMxcPriceAggregator.address);
+        await LPWAN.initialize(ProxiedMEP1004Token.address);
         await deployments.save("ProxiedLPWAN", {
             address: proxyAddress,
             implementation: LPWANDeployTx.address,

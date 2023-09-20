@@ -173,6 +173,36 @@ contract MEP1002Token is
         emit MEP1002TokenUpdateName(geolocation_, tokenNames[geolocation_]);
     }
 
+    function mintTo(address to, uint256 geolocation_) external {
+        if (!geolocation_.isValidCell()) revert InvalidGeolocation();
+        if (_exists(geolocation_)) revert ERC721TokenAlreadyMinted();
+        //        bool hasParent = false;
+        uint256 res = geolocation_.getResolution();
+        if (res != H3Library.getMinResolution()) revert InvalidGeolocation();
+        //        for (uint256 i = 0; i < res - H3Library.getMinResolution(); i++) {
+        //            uint256 parentGeolocation = geolocation_.cellToParent(res - (i + 1));
+        //            if(parentGeolocation == 0) break;
+        //            if(parentGeolocation == geolocation_) break;
+        //            this.mint(parentGeolocation);
+        //            hasParent = true;
+        //        }
+        _tokenIds.increment();
+        //        if(hasParent) {
+        //            parentTokenId = tokenId - 1;
+        //            _nestMint(address(this), tokenId, parentTokenId, "");
+        //        }else {
+        _safeMint(address(this), geolocation_);
+        //        }
+        IMEP1002NamingToken(_namingToken).mint(to, geolocation_);
+        emit MEP1002TokenUpdateName(geolocation_, tokenNames[geolocation_]);
+    }
+
+    function exists(uint256 geolocation_) external view returns (bool) {
+        return _exists(geolocation_);
+    }
+
+
+
     function setName(uint256 geolocation_, uint256 nameWrapperTokenId) external {
         _requireMinted(geolocation_);
         if (IERC721(_namingToken).ownerOf(geolocation_) != _msgSender()) {

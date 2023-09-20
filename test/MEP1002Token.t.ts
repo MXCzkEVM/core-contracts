@@ -85,21 +85,6 @@ describe("MEP1002Token", function () {
         console.error("Invalid h3Index");
         return;
     }
-    console.log(
-        "h3IndexRes7",
-        h3IndexRes7,
-        BigNumber.from(`0x${h3IndexRes7}`).toString()
-    );
-    console.log(
-        "h3IndexRes8",
-        h3IndexRes8,
-        BigNumber.from(`0x${h3IndexRes8}`).toString()
-    );
-    console.log(
-        "h3IndexRes8Parent",
-        h3IndexRes8Parent,
-        BigNumber.from(`0x${h3IndexRes8Parent}`).toString()
-    );
     const h3IndexRes7Big = BigNumber.from(`0x${h3IndexRes7}`);
     const h3IndexRes8Big = BigNumber.from(`0x${h3IndexRes8}`);
     const h3IndexRes8ParentBig = BigNumber.from(`0x${h3IndexRes8Parent}`);
@@ -114,7 +99,7 @@ describe("MEP1002Token", function () {
                 MEP1002Token.initialize(
                     "MEP1002Token",
                     "MEP1002",
-                    MEP1002Token.address,
+                    MEP1002NamingToken.address,
                 )
             ).to.be.revertedWith(
                 "Initializable: contract is already initialized"

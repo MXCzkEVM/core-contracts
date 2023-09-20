@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { deployments, ethers, getNamedAccounts } from "hardhat";
+import { deployments, ethers, getNamedAccounts, network } from "hardhat";
 import { BigNumber, constants } from "ethers";
 import {
     MEP1004Token,
@@ -11,6 +11,9 @@ import {
 } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { getAddress } from "@ethersproject/address";
+import {H3Index} from "h3-js";
+import h3 from "h3-js";
+import {mine} from "@nomicfoundation/hardhat-network-helpers";
 
 function bn(x: number): BigNumber {
     return BigNumber.from(x);
@@ -18,7 +21,10 @@ function bn(x: number): BigNumber {
 
 const ADDRESS_ZERO = constants.AddressZero;
 
+const h3IndexRes7 = getRandomH3Index(7);
+
 // test.mxc name wrapper tokenid
+const h3IndexRes7Big = BigNumber.from(`0x${h3IndexRes7}`);
 
 const setupTest = deployments.createFixture(
     async ({ deployments, getNamedAccounts, ethers }, options) => {
@@ -85,28 +91,31 @@ describe("MEP1004Token", function () {
 
     describe("Minting", async function () {
         it("should allow admin to mint", async function () {
-            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+            await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
+
+            await expect(await MEP1004Token.whereSlot(1),)
         });
 
         it("should not allow non-admin account to mint tokens", async () => {
             await expect(
                 MEP1004Token.connect(addrs[1]).mint(
                     addrs[1].address,
-                    testSNCode
+                    testSNCode,
+                    h3IndexRes7Big, "EU863-870"
                 )
             ).to.be.revertedWith("Controllable: Caller is not a controller");
         });
 
         it("cannot mint by invalid sncode", async function () {
-            await expect(MEP1004Token.mint(owner.address, "test")).to.be
+            await expect(MEP1004Token.mint(owner.address, "test",h3IndexRes7Big, "EU863-870")).to.be
                 .reverted;
         });
 
         it("cannot mint already minted token", async function () {
-            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
             await expect(
-                MEP1004Token.mint(owner.address, testSNCode)
+                MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")
             ).to.be.revertedWithCustomError(
                 MEP1004Token,
                 "ERC721TokenAlreadyMinted"
@@ -117,7 +126,7 @@ describe("MEP1004Token", function () {
         });
 
         it("should return balance", async function () {
-            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+            await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
             await expect(await MEP1004Token.balanceOf(owner.address)).to.equal(
                 1
@@ -125,7 +134,7 @@ describe("MEP1004Token", function () {
         });
 
         it("should mint token event", async function () {
-            await expect(MEP1004Token.mint(owner.address, testSNCode))
+            await expect(MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870"))
                 .to.emit(MEP1004Token, "Transfer")
                 .withArgs(
                     "0x0000000000000000000000000000000000000000",
@@ -135,7 +144,7 @@ describe("MEP1004Token", function () {
         });
 
         it("should set name event", async function () {
-            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
             await expect(MEP1004Token.setName(1, testDotMXCTokenId))
                 .to.emit(MEP1004Token, "MEP1004TokenUpdateName")
                 .withArgs(1, "test.mxc");
@@ -146,7 +155,7 @@ describe("MEP1004Token", function () {
         });
 
         it("should setting name", async function () {
-            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+            await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
             await expect(await MEP1004Token.tokenNames(1)).to.equal("");
             await expect(await MEP1004Token.setName(1, testDotMXCTokenId)).to
@@ -155,7 +164,7 @@ describe("MEP1004Token", function () {
         });
 
         it("should reset name", async function () {
-            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+            await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
             await expect(await MEP1004Token.tokenNames(1)).to.equal("");
             await expect(await MEP1004Token.setName(1, testDotMXCTokenId)).to
@@ -167,27 +176,27 @@ describe("MEP1004Token", function () {
 
         it("should get uri", async function () {
             await MEP1004Token.setBaseURI("https://wannsee-test.mxc.com/");
-            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+            await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
             await expect(await MEP1004Token.tokenURI(1)).to.equal(
-                `https://wannsee-test.mxc.com/1?name=`
+                `https://wannsee-test.mxc.com/1?name=&sn=NEOTEST1235421&regionId=EU863-870&mep1002Id=${h3IndexRes7Big.toString()}`
             );
         });
 
         it("should return supply", async function () {
-            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+            await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
             await expect(await MEP1004Token.totalSupply()).to.equal(1);
         });
 
         it("should return sncode", async function () {
-            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+            await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
             await expect(await MEP1004Token.getSNCode(1)).to.equal(testSNCode);
         });
 
         it("should return tokenid", async function () {
-            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+            await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
             await expect(await MEP1004Token.getTokenId(testSNCode)).to.equal(1);
         });
@@ -195,21 +204,27 @@ describe("MEP1004Token", function () {
 
     describe("MEP1002Slots", async function () {
         it("should allow owner to insert the MEP1004 token to the specified slot of the MEP1002 token", async function () {
-            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
             await MEP1002Token.mint(testMEP1002TokenId);
+            await MEP1004Token.removeFromMEP1002Slot(1, h3IndexRes7Big, 0, {
+                value: ethers.utils.parseEther('50')
+            });
             await expect(
-                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 123)
+                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId,  "EU863-870",123)
             ).to.be.revertedWithCustomError(MEP1004Token, "ExceedSlotLimit");
             await expect(
-                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0)
+                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId,  "EU863-870", 0)
             ).to.emit(MEP1004Token, "InsertToMEP1002Slot");
         });
 
         it("should allow owner to remove the MEP1004 token from the specified slot of the MEP1002 token ", async function () {
-            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
             await MEP1002Token.mint(testMEP1002TokenId);
+            await MEP1004Token.removeFromMEP1002Slot(1, h3IndexRes7Big, 0, {
+                value: ethers.utils.parseEther('50')
+            });
 
-            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0);
+            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, "EU863-870", 0);
             await expect(
                 await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
             ).to.ok;
@@ -221,10 +236,13 @@ describe("MEP1004Token", function () {
         });
 
         it("should return correct where slot", async function () {
-            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
             await MEP1002Token.mint(testMEP1002TokenId);
+            await MEP1004Token.removeFromMEP1002Slot(1, h3IndexRes7Big, 0, {
+                value: ethers.utils.parseEther('50')
+            });
 
-            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 1);
+            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, "EU863-870",1);
             await expect(await MEP1004Token.whereSlot(1)).to.deep.equals([
                 testMEP1002TokenId,
                 1,
@@ -233,9 +251,12 @@ describe("MEP1004Token", function () {
         });
 
         it("should return slot num", async function () {
-            await MEP1004Token.mint(owner.address, testSNCode);
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
             await MEP1002Token.mint(testMEP1002TokenId);
-            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 1);
+            await MEP1004Token.removeFromMEP1002Slot(1, h3IndexRes7Big, 0, {
+                value: ethers.utils.parseEther('50')
+            });
+            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, "EU863-870",1);
 
             const slots = await MEP1004Token.getMEP1002Slot(testMEP1002TokenId);
 
@@ -263,22 +284,22 @@ describe("MEP1004Token", function () {
             await expect(
                 await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
             ).to.ok;
-            await MEP1004Token.mint(owner.address, testSNCode);
-            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0);
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
             await expect(
-                MEP1004Token.removeFromMEP1002Slot(1, testMEP1002TokenId, 0, {
+                MEP1004Token.removeFromMEP1002Slot(1, h3IndexRes7Big, 0, {
                     value: ethers.utils.parseEther("50"),
                 })
             ).to.emit(MEP1004Token, "RemoveFromMEP1002Slot");
-            await expect(await MEP1004Token.getBalance()).to.be.equal(
+            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, "EU863-870", 0);
+            await expect(await ethers.provider.getBalance(MEP1004Token.address)).to.be.equal(
                 ethers.utils.parseEther("50")
             );
-            await expect(MEP1004Token.withdrawal()).to.be.ok;
-            await expect(await MEP1004Token.getBalance()).to.be.equal(0);
+            await MEP1004Token.withdrawal(owner.address);
+            await expect(await ethers.provider.getBalance(MEP1004Token.address)).to.be.equal(0);
         });
 
         it("should not allow non-owner to withdraw the exit fee", async function () {
-            await expect(MEP1004Token.connect(addrs[1]).withdrawal()).to.be
+            await expect(MEP1004Token.connect(addrs[1]).withdrawal(owner.address)).to.be
                 .reverted;
         });
 
@@ -288,14 +309,13 @@ describe("MEP1004Token", function () {
             await expect(
                 await MEP1004Token.setExitFee(ethers.utils.parseEther("50"))
             ).to.ok;
-            await MEP1004Token.mint(owner.address, testSNCode);
 
-            await MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0);
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big,"EU863-870");
 
             await expect(
-                MEP1004Token.removeFromMEP1002SlotAdmin(
+                MEP1004Token.removeFromMEP1002Slot(
                     1,
-                    testMEP1002TokenId,
+                    h3IndexRes7Big,
                     0
                 )
             ).to.emit(MEP1004Token, "RemoveFromMEP1002Slot");
@@ -303,7 +323,7 @@ describe("MEP1004Token", function () {
             await expect(await MEP1004Token.getStatus(1)).to.equals(1);
 
             await expect(
-                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, 0)
+                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, "EU863-870",0)
             ).to.be.reverted;
 
             await expect(
@@ -314,19 +334,48 @@ describe("MEP1004Token", function () {
 
             await expect(await MEP1004Token.getStatus(1)).to.equals(0);
         });
+
+        it("should empty slot after slot expired and insert to expired slot", async function () {
+            await MEP1004Token.setSlotExpiredBlockNum(100);
+
+            await MEP1004Token.mint(owner.address, testSNCode, testMEP1002TokenId,"EU863-870");
+
+            let slots = await MEP1004Token.getMEP1002Slot(testMEP1002TokenId);
+
+            await expect(slots[1][0]).to.equal(1);
+
+            await expect(
+                MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, "EU863-870",0)
+            ).to.be.reverted;
+
+            await mine(1000);
+
+            slots = await MEP1004Token.getMEP1002Slot(testMEP1002TokenId);
+
+            await expect(slots[1][0]).to.equal(0);
+
+            const where = await MEP1004Token.whereSlot(BigNumber.from(1));
+
+            await expect(where).deep.equals([0,0,0]);
+
+            await expect(await MEP1004Token.getStatus(1)).to.equals(1);
+
+            await expect(MEP1004Token.insertToMEP1002Slot(1, testMEP1002TokenId, "EU863-870", 0)).to.be.ok;
+
+        })
     });
 
     describe("LocationProofs", async function () {
         it("should allow owner to set the location proof", async function () {
             await MEP1002Token.mint(testMEP1002TokenId);
-            await MEP1004Token.mint(owner.address, testSNCode);
-            await MEP1004Token.mint(addrs[1].address, "M2X-testcode1");
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
+            await MEP1004Token.mint(addrs[1].address, "M2X-testcode1",h3IndexRes7Big, "EU863-870");
             const testCodeTokenId1 = BigNumber.from(
                 ethers.utils.keccak256(
                     ethers.utils.toUtf8Bytes("M2X-testcode1")
                 )
             );
-            await MEP1004Token.mint(addrs[1].address, "NEO-testcode2");
+            await MEP1004Token.mint(addrs[1].address, "NEO-testcode2",h3IndexRes7Big, "EU863-870");
             const testCodeTokenId2 = BigNumber.from(
                 ethers.utils.keccak256(
                     ethers.utils.toUtf8Bytes("NEO-testcode2")
@@ -346,14 +395,14 @@ describe("MEP1004Token", function () {
         });
         it("should return latest Location Proof", async function () {
             await MEP1002Token.mint(testMEP1002TokenId);
-            await MEP1004Token.mint(owner.address, testSNCode);
-            await MEP1004Token.mint(addrs[1].address, "M2X-testcode1");
+            await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
+            await MEP1004Token.mint(addrs[1].address, "M2X-testcode1",h3IndexRes7Big, "EU863-870");
             const testCodeTokenId1 = BigNumber.from(
                 ethers.utils.keccak256(
                     ethers.utils.toUtf8Bytes("M2X-testcode1")
                 )
             );
-            await MEP1004Token.mint(addrs[1].address, "NEO-testcode2");
+            await MEP1004Token.mint(addrs[1].address, "NEO-testcode2",h3IndexRes7Big, "EU863-870");
             const testCodeTokenId2 = BigNumber.from(
                 ethers.utils.keccak256(
                     ethers.utils.toUtf8Bytes("NEO-testcode2")
@@ -380,14 +429,14 @@ describe("MEP1004Token", function () {
 
         it("should return correct proofs", async function () {
             await MEP1002Token.mint(testMEP1002TokenId);
-            await MEP1004Token.mint(owner.address, testSNCode);
-            await MEP1004Token.mint(addrs[1].address, "M2X-testcode1");
+            await MEP1004Token.mint(owner.address, testSNCode, h3IndexRes7Big, "EU863-870");
+            await MEP1004Token.mint(addrs[1].address, "M2X-testcode1", h3IndexRes7Big, "EU863-870");
             const testCodeTokenId1 = BigNumber.from(
                 ethers.utils.keccak256(
                     ethers.utils.toUtf8Bytes("M2X-testcode1")
                 )
             );
-            await MEP1004Token.mint(addrs[1].address, "NEO-testcode2");
+            await MEP1004Token.mint(addrs[1].address, "NEO-testcode2",h3IndexRes7Big, "EU863-870");
             const testCodeTokenId2 = BigNumber.from(
                 ethers.utils.keccak256(
                     ethers.utils.toUtf8Bytes("NEO-testcode2")
@@ -458,7 +507,7 @@ describe("MEP1004Token", function () {
         });
 
         it("should update after upgrade", async function () {
-            await expect(await MEP1004Token.mint(owner.address, testSNCode)).to
+            await expect(await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870")).to
                 .ok;
             await expect(await MEP1004Token.totalSupply()).to.equal(1);
 
@@ -528,3 +577,12 @@ describe("MEP1004Token", function () {
         });
     });
 });
+
+function getRandomH3Index(res: number): H3Index {
+    const MAX_LATITUDE = (90 * Math.PI) / 180;
+    const MAX_LONGITUDE = (180 * Math.PI) / 180;
+
+    const latitude = Math.random() * MAX_LATITUDE;
+    const longitude = Math.random() * MAX_LONGITUDE;
+    return h3.latLngToCell(latitude, longitude, res);
+}

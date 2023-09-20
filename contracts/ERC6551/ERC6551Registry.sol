@@ -1,9 +1,13 @@
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
-import "../interfaces/IERC6551Registry.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
+import {IERC6551Registry} from "../interfaces/IERC6551Registry.sol";
+import {ControllableUpgradeable} from "../common/ControllableUpgradeable.sol";
+import {Proxied} from "hardhat-deploy/solc_0.8/proxy/Proxied.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract ERC6551Registry is IERC6551Registry {
+
+contract ERC6551Registry is ControllableUpgradeable, IERC6551Registry {
     error InitializationFailed();
 
     function createAccount(
@@ -71,4 +75,8 @@ contract ERC6551Registry is IERC6551Registry {
             abi.encode(salt_, chainId_, tokenContract_, tokenId_)
         );
     }
+}
+
+contract ProxiedERC6551Registry is Proxied, UUPSUpgradeable, ERC6551Registry {
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

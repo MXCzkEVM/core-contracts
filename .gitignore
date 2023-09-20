@@ -13,3 +13,6 @@ artifacts
 .vscode
 .idea
 .fleet
+out
+broadcast
+cache

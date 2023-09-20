@@ -9,7 +9,9 @@ import "../interfaces/IERC6551Account.sol";
 
 contract ERC6551AccountImplementation is IERC165, IERC1271, IERC6551Account {
 
-    uint public accountNonce;
+    event TransactionExecuted(address indexed target, uint256 indexed value, bytes data);
+
+    uint public nonce;
 
     receive() external payable {}
 
@@ -28,7 +30,8 @@ contract ERC6551AccountImplementation is IERC165, IERC1271, IERC6551Account {
                 revert(add(result, 32), mload(result))
             }
         }
-        ++accountNonce;
+        ++nonce;
+        emit TransactionExecuted(to, value, data);
     }
 
     function token()
@@ -54,10 +57,6 @@ contract ERC6551AccountImplementation is IERC165, IERC1271, IERC6551Account {
         if (chainId != block.chainid) return address(0);
 
         return IERC721(tokenContract).ownerOf(tokenId);
-    }
-
-    function nonce() external view returns (uint256){
-        return accountNonce;
     }
 
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {

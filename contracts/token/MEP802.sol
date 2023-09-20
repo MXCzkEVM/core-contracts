@@ -187,8 +187,4 @@ contract SensorNFTContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
 
         return sensor.expirationBlock > block.number;
     }
-
-    // function getSensorNFTData(uint256 _tokenId) public view returns (address) {
-    //     return sensorNFT[_tokenId].sensorProfileContractAddress;
-    // }
 }

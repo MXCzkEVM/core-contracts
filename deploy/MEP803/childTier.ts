@@ -2,11 +2,13 @@ import { ContractReceipt } from "ethers";
 import { ethers, run } from "hardhat";
 
 async function main() {
-  const ApplicationAddress = '0x9631ec0491a60d500a10d61e08ac17d00823Ff39';
+  const ApplicationAddress = '0xe7e4d25905e4ac14d6151F999DEB3cC218055783';
   const PROFILE_URI = "https://gateway.pinata.cloud/ipfs/Qmav5akQh5ZzWZ1UKAQ66LaXZZFnYqC3GYw6xVVJiXfQfu"
-  const TIER = "adult";
+  const TIER = "child";
   const SensorProfile = await ethers.getContractFactory("SensorProfile");
-  const sensorProfile = await SensorProfile.deploy(ApplicationAddress, PROFILE_URI, TIER);
+  const sensorProfile = await SensorProfile.deploy(ApplicationAddress, PROFILE_URI, TIER, {
+    gasPrice: ethers.utils.parseUnits("600000000", "gwei"), // Set gas price to 10 gwei
+  });
 
   await sensorProfile.deployed()
 

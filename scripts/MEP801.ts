@@ -1,5 +1,5 @@
 import { ContractReceipt } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, run } from "hardhat";
 
 async function main() {
   const APP_NAME = 'Walk Sensor';
@@ -9,10 +9,17 @@ async function main() {
 
   await isoApplication.deployed();
 
+  console.log('Verifying Application Contract.....');
+  await run("verify:verify", {
+    address: isoApplication.address,
+    constructorArguments: [
+      APP_NAME
+    ]
+  })
+
   console.log(
     `ISOApplication deployed to ${isoApplication.address}`
   );
-
 
   // Catch the ISOApplicationDeployed event and its values
   const isoApplicationTxnReceipt: ContractReceipt = await isoApplication.deployTransaction.wait();
@@ -44,7 +51,6 @@ async function main() {
   console.log("Check owner of contract Log: ", ownerOfContractTxn);
 
   // CHANGE OWNER OF CONTRACT
-  // const changeOwnerTxn = await isoApplication.changeOwner(otherAccount.address);
   const changeOwnerTxn = await isoApplication.changeOwner('0x8D5b0F873c00F8e8EA7FEF0C24DBdC5Ac2758D26');
   const changeOwnerTxnReceipt: ContractReceipt = await changeOwnerTxn.wait();
 

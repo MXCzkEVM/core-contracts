@@ -12,7 +12,7 @@ import "./IMEP802.sol";
  * @author Abiodun Awoyemi
  * @notice This contract allow user to create, add and manange sensor devices as NFTs.
  */
-contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
+contract SensorNFTContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
     using Counters for Counters.Counter;
 
     Counters.Counter private _myCounter;
@@ -73,7 +73,7 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
         lpwanAddress = _lpwanAddress;
         owner = msg.sender;
 
-        emit ProvisioningContractDeployed(address(this));
+        emit SensorNFTContractDeployed(address(this));
     }
 
     /**
@@ -134,7 +134,7 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
      * @dev See {IMEP-802 -> claimSensorNFT}
      * Emits an {SensorNFTClaimed} event indicating a claimed device.
      */
-    function claimSensorNFT(bytes32 _pID, address _sensorProfileContractAddress) external payable nonReentrant {
+    function claimSensorNFT(string memory _pID, address _sensorProfileContractAddress) external payable nonReentrant {
         uint256 _amountPaid = msg.value;
         address _claimer = msg.sender;
         bytes32 _pIDHash = keccak256(abi.encodePacked(_pID));
@@ -187,5 +187,8 @@ contract ProvisioningContract is IMEP802, ERC721URIStorage, ReentrancyGuard {
 
         return sensor.expirationBlock > block.number;
     }
-}
 
+    // function getSensorNFTData(uint256 _tokenId) public view returns (address) {
+    //     return sensorNFT[_tokenId].sensorProfileContractAddress;
+    // }
+}

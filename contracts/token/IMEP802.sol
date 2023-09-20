@@ -6,7 +6,7 @@ pragma solidity ^0.8.18;
 interface IMEP802 {
     /// @dev This event gets emitted when the Provisioning contract is deployed.
     ///  The parameters is the address of the contract deployed
-    event ProvisioningContractDeployed(address indexed nftContractAddress);
+    event SensorNFTContractDeployed(address indexed nftContractAddress);
 
     /// @dev This event gets emitted when a PID is produced.
     ///  The parameters are the email, amount and Application contract address.
@@ -24,7 +24,7 @@ interface IMEP802 {
 
     /// @dev This event gets emitted when a sensor NFT is claimed.
     ///  The parameters are tokenID, pID, and address of the claimer
-    event SensorNFTClaimed(uint256 indexed tokenId, bytes32 indexed _pID, address indexed claimer);
+    event SensorNFTClaimed(uint256 indexed tokenId, bytes32 indexed _pIDHash, address indexed claimer);
 
     /// @dev This event gets emitted when a sensor NFT is renewed.
     ///  The parameters are tokenID, amount paid, and address of the renewer
@@ -64,7 +64,7 @@ interface IMEP802 {
     ///  This method starts the validity period of the sensor.
     /// @param _pID the PID of the sensor to be claimed
     /// @param _sensorProfileContractAddress the sensor profile contract address
-    function claimSensorNFT(bytes32 _pID, address _sensorProfileContractAddress) external payable;
+    function claimSensorNFT(string memory _pID, address _sensorProfileContractAddress) external payable;
 
     /// @notice Checks whether the sensor validity period expired
     /// @param _tokenId The identifier of the NFT

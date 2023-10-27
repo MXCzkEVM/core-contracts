@@ -438,6 +438,8 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         if (msg.value < _exitFee) {
             revert InsufficientFee();
         }
+        //TODO: upgrade this bug: always expired slot
+//        _slotExpiredBlocks[_tokenId] = 0;
         _MEP1004Status[_tokenId] = 0;
     }
 

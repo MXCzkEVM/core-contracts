@@ -207,7 +207,11 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
     }
 
     function getSlotExpired(uint256 _tokenId) public view returns (bool) {
-        if(_slotExpiredBlocks[_tokenId] != 0 && _slotExpiredBlocks[_tokenId] < block.number) {
+        uint slotExpiredBlock = _slotExpiredBlocks[_tokenId];
+        if(_tokenSlotTimes[_tokenId] == 0) {
+            slotExpiredBlock += 680000;
+        }
+        if(_slotExpiredBlocks[_tokenId] != 0 && slotExpiredBlock < block.number) {
             return true;
         }
         return false;
@@ -330,9 +334,9 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         if (!_isApprovedOrOwner(_msgSender(), _tokenId)) {
             revert ERC721NotApprovedOrOwner();
         }
-        if (IERC721(_MEP1002Addr).ownerOf(_mep1002Id) != _MEP1002Addr) {
-            revert ERC721InvalidTokenId();
-        }
+//        if (IERC721(_MEP1002Addr).ownerOf(_mep1002Id) != _MEP1002Addr) {
+//            revert ERC721InvalidTokenId();
+//        }
         uint256 SNCodeType = getSNCodeType(_SNCodes[_tokenId]);
         if (SNCodeType == type(uint256).max) {
             revert SNCodeNotAllow();
@@ -438,8 +442,7 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         if (msg.value < _exitFee) {
             revert InsufficientFee();
         }
-        //TODO: upgrade this bug: always expired slot
-//        _slotExpiredBlocks[_tokenId] = 0;
+        _slotExpiredBlocks[_tokenId] = 0;
         _MEP1004Status[_tokenId] = 0;
     }
 

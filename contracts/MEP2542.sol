@@ -21,6 +21,7 @@ interface TreasuryApproveToken {
 
 error RewardExpired();
 error InvalidLength();
+error InvalidOrder();
 error InvalidTokenOwnership();
 error AlreadyClaim();
 error InvalidProof();
@@ -39,6 +40,8 @@ contract MEP2542 is ControllableUpgradeable, ReentrancyGuard {
     event ReleaseEpoch(uint indexed epochNumber, bytes32 indexed rewardMerkleRoot, address onlineStatusPointer);
 
     event ClaimedReward(address indexed miner, uint indexed epochNumber, RewardInfo rewardInfo);
+
+    event BulkClaimedReward(address indexed miner, uint[] epochIds, RewardInfo[] rewardInfos);
 
     struct RewardInfo {
         address[] token;
@@ -77,13 +80,15 @@ contract MEP2542 is ControllableUpgradeable, ReentrancyGuard {
 
     mapping(uint => uint) public epochReleaseTime;
 
-    mapping(address => mapping(uint => bool)) private minerClaimedEpoch;
+    mapping(address => mapping(uint => bool)) private _minerClaimedEpoch;
 
     mapping(uint => address) private minerEpochOnlineStatusPointer;
 
     mapping (address => address[]) private userSelectedToken;
 
-    uint[36] private __gap;
+    mapping(address => mapping(uint => bytes32)) private minerClaimedEpoch;
+
+    uint[35] private __gap;
 
     function initialize(
         address _treasury,
@@ -117,45 +122,66 @@ contract MEP2542 is ControllableUpgradeable, ReentrancyGuard {
         if(proofs.length != epochIds.length || proofs.length != rewards.length || proofs.length == 0) {
             revert InvalidLength();
         }
-        if(_msgSender() != _getMEP1004TokenERC6551Account(MEP1004TokenId)) {
+        address _ERC6551Account = _getMEP1004TokenERC6551Account(MEP1004TokenId);
+        if(_msgSender() != _ERC6551Account) {
             revert InvalidTokenOwnership();
         }
+        // make sure order
+        for(uint i = 1;i < epochIds.length;i++) {
+            if(epochIds[i] < epochIds[i-1]) {
+                revert InvalidOrder();
+            }
+        }
 
+        if(epochReleaseTime[epochIds[0]] + epochExpiredTime < block.timestamp) {
+            revert RewardExpired();
+        }
+
+        // claimed record
         RewardInfo memory totalRewardInfo = RewardInfo(new address[](rewardTokens.length + 1), new uint[](rewardTokens.length + 1)); // +1 for sensor token
-        uint tokenCount;
+        for(uint i = 0; i < rewardTokens.length; i++) {
+            totalRewardInfo.token[i] = rewardTokens[i].token;
+        }
+        totalRewardInfo.token[rewardTokens.length] = address(sensorToken);
+
+        bytes32 bitMap = minerClaimedEpoch[_ERC6551Account][epochIds[0] / 256];
         for (uint i = 0; i < proofs.length; i++) {
-            if(minerClaimedEpoch[msg.sender][epochIds[i]]) {
+            uint byteIndex = epochIds[i] % 256 / 8;
+            uint bitIndex = epochIds[i] % 8;
+
+            if(i > 0 && epochIds[i] / 256 != epochIds[i-1] / 256) {
+                bitMap = minerClaimedEpoch[_ERC6551Account][epochIds[i] / 256];
+            }
+
+            // claimed
+            if (bitMap & (bytes32(uint(1)) << (byteIndex * 8) + bitIndex) != bytes32(0)) {
                 revert AlreadyClaim();
             }
-            if(epochReleaseTime[epochIds[i]] + epochExpiredTime < block.timestamp) {
-                revert RewardExpired();
-            }
+
             bytes32 rewardHash = keccak256(abi.encode(MEP1004TokenId, epochIds[i], rewards[i]));
             if (!_verify(proofs[i].proofs, rewardMerkleRoots[epochIds[i]], rewardHash)) {
                 revert InvalidProof();
             }
-
             for (uint j = 0; j < rewards[i].token.length; j++) {
-                bool found = false;
-                for (uint k = 0; k < tokenCount; k++) {
+                for(uint k = 0; k < totalRewardInfo.token.length; k++) {
                     if (totalRewardInfo.token[k] == rewards[i].token[j]) {
                         totalRewardInfo.amount[k] += rewards[i].amount[j];
-                        found = true;
                         break;
                     }
                 }
-
-                if (!found) {
-                    totalRewardInfo.token[tokenCount] = rewards[i].token[j];
-                    totalRewardInfo.amount[tokenCount] = rewards[i].amount[j];
-                    tokenCount++;
+            }
+            bitMap |= bytes32(uint(1)) << (byteIndex * 8 + bitIndex);
+            if(i != epochIds.length - 1) {
+                if(epochIds[i] / 256 != epochIds[i+1] / 256) {
+                    // update bitMap
+                    minerClaimedEpoch[_ERC6551Account][epochIds[i] / 256] = bitMap;
                 }
             }
-            minerClaimedEpoch[msg.sender][epochIds[i]] = true;
-            emit ClaimedReward(_msgSender(), epochIds[i], rewards[i]);
         }
+        minerClaimedEpoch[_ERC6551Account][epochIds[epochIds.length - 1] / 256] = bitMap;
+        emit BulkClaimedReward(_msgSender(), epochIds, rewards);
 
-        for (uint i = 0; i < tokenCount; i++) {
+        for (uint i = 0; i < totalRewardInfo.token.length; i++) {
             if(totalRewardInfo.amount[i] != 0) {
                 if(!IERC20(totalRewardInfo.token[i]).transferFrom(treasury, to, totalRewardInfo.amount[i])) {
                     revert TransferFailed();
@@ -165,7 +191,7 @@ contract MEP2542 is ControllableUpgradeable, ReentrancyGuard {
     }
 
     function selectToken(address[] memory tokens, bytes[] calldata signatures) external {
-        if(tokens.length == 0 || tokens.length != signatures.length) {
+        if(tokens.length != signatures.length) {
             revert InvalidLength();
         }
         if(tokens.length > maxSelectToken || tokens.length > rewardTokens.length) {
@@ -229,7 +255,9 @@ contract MEP2542 is ControllableUpgradeable, ReentrancyGuard {
     function getMinerClaimedEpochs(uint MEP1004TokenId, uint[] calldata epochNumbers) external view returns (bool[] memory) {
         bool[] memory result = new bool[](epochNumbers.length);
         for (uint i = 0; i < epochNumbers.length; i++) {
-            result[i] = minerClaimedEpoch[_getMEP1004TokenERC6551Account(MEP1004TokenId)][epochNumbers[i]];
+            bytes32 bitMap = minerClaimedEpoch[_getMEP1004TokenERC6551Account(MEP1004TokenId)][epochNumbers[i] / 256];
+            uint bitPosition = epochNumbers[i] % 256;
+            result[i] = (bitMap & (bytes32(uint(1)) << bitPosition)) != bytes32(0);
         }
         return result;
     }
@@ -279,6 +307,10 @@ contract MEP2542 is ControllableUpgradeable, ReentrancyGuard {
                 return;
             }
         }
+    }
+
+    function setEpochExpiredTime(uint _epochExpiredTime) external onlyController {
+        epochExpiredTime = _epochExpiredTime;
     }
 
     function getUserSelectedToken(address account) external view returns (address[] memory) {

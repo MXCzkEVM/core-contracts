@@ -393,7 +393,7 @@ contract MEP2542Test is Test {
         MEP2542.RewardInfo[] memory rewards = new MEP2542.RewardInfo[](1);
         rewards[0] = getTestRewardInfo(100);
 
-        vm.prank(Bob);
+        vm.startPrank(Bob);
         ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
             abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
         );
@@ -401,6 +401,13 @@ contract MEP2542Test is Test {
         // assert reward balance
         assertEq(gin1689Coin.balanceOf(account), 100);
         assertEq(crabCoin.balanceOf(account), 100);
+
+        vm.startPrank(Bob);
+        vm.expectRevert(AlreadyClaim.selector);
+
+        ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+            abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+        );
     }
 
     function testERC6551RevertClaimRewardWithNoProof() public {
@@ -439,6 +446,9 @@ contract MEP2542Test is Test {
         rewards[0] = getTestRewardInfo(100);
         rewards[1] = getTestRewardInfo(100);
 
+        bool[] memory results  = mep2542.getMinerClaimedEpochs(mep1004TokenId,epochIds);
+        assertEq(results[0], false);
+
         vm.prank(Bob);
         ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
             abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
@@ -446,6 +456,33 @@ contract MEP2542Test is Test {
         // assert reward balance
         assertEq(gin1689Coin.balanceOf(account), 200);
         assertEq(crabCoin.balanceOf(account), 200);
+
+        // assert results
+        results  = mep2542.getMinerClaimedEpochs(mep1004TokenId,epochIds);
+        assertEq(results[0], true);
+        assertEq(results[1], true);
+
+        // test bytes32 bitmap switch
+        for(uint i = 3; i <= 1000; i++) {
+            releaseTestEpoch(i);
+        }
+        vm.startPrank(Bob);
+
+        for (uint i = 3; i < 1000; i+=2) {
+            epochIds[0] = i;
+            epochIds[1] = i+1;
+            proofs[0].proofs = getTestRewardMerkleProof(i);
+            proofs[1].proofs = getTestRewardMerkleProof(i+1);
+            ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+                abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+            );
+        }
+        // claimed
+        vm.expectRevert(AlreadyClaim.selector);
+        ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+            abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+        );
+
     }
 
     function testRevertClaimExpiredReward() public {
@@ -465,6 +502,15 @@ contract MEP2542Test is Test {
 
         vm.startPrank(Bob);
         vm.expectRevert(RewardExpired.selector);
+        ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+            abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+        );
+        vm.stopPrank();
+
+        vm.prank(address(this));
+        mep2542.setEpochExpiredTime(604800);
+
+        vm.startPrank(Bob);
         ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
             abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
         );

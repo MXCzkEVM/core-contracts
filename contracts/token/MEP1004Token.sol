@@ -85,7 +85,9 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
 
     uint256 private _slotExpiredBlockNum;
 
-    uint256[32] private __gap;
+    address[] private _whitelists;
+
+    uint256[3] private __gap;
 
     function initialize(string memory name_, string memory symbol_) external initializer {
         __Controllable_init();
@@ -145,6 +147,24 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
 
     function setSlotExpiredBlockNum(uint256 slotExpiredBlockNum_) external onlyController {
         _slotExpiredBlockNum = slotExpiredBlockNum_;
+    }
+
+    function setWhitelists(address[] memory whitelists) external onlyController {
+        _whitelists = whitelists;
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal override {
+        if(_whitelists.length != 0) {
+            for(uint i = 0; i < _whitelists.length; i++) {
+                if(msg.sender == _whitelists[i]) {
+                    break;
+                }
+                if(i == _whitelists.length - 1) {
+                    revert("OnlyWhitelistsCanTransfer");
+                }
+            }
+        }
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 
     function getSlotExpiredBlockNum() external returns (uint256) {

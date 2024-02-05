@@ -143,6 +143,21 @@ describe("MEP1004Token", function () {
                 );
         });
 
+        it("should only market can transfer", async function() {
+            await expect(MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870"))
+                .to.emit(MEP1004Token, "Transfer")
+                .withArgs(
+                    "0x0000000000000000000000000000000000000000",
+                    owner.address,
+                    1
+                );
+            await MEP1004Token.setWhitelists(["0x0000000000000000000000000000000000000001"]);
+            await expect(MEP1004Token.transferFrom(owner.address, addrs[0].address, 1)).to.be.revertedWith("OnlyWhitelistsCanTransfer");
+
+            await MEP1004Token.setWhitelists([owner.address])
+            await expect(MEP1004Token.transferFrom(owner.address, addrs[0].address, 1)).to.be.ok;
+        })
+
         it("should set name event", async function () {
             await MEP1004Token.mint(owner.address, testSNCode,h3IndexRes7Big, "EU863-870");
             await expect(MEP1004Token.setName(1, testDotMXCTokenId))

@@ -16,7 +16,9 @@ contract UpgradeMXCL1 is Script {
     function run() external {
         vm.startBroadcast(privateKey);
         UUPSUpgradeable(MEP1004Addr).upgradeTo(address(new ProxiedMEP1004Token()));
-        ProxiedMEP1004Token(MEP1004Addr).setSlotExpiredBlockNum(1000000);
+        address[] memory whitelists = new address[](1);
+        whitelists[0] = address(0xe031013A7B7Caf05FC20Bdc49B731E3F2f0cAfFd);
+        ProxiedMEP1004Token(MEP1004Addr).setWhitelists(whitelists);
         vm.stopBroadcast();
     }
 

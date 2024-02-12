@@ -45,6 +45,9 @@ contract MEP2542Test is Test {
     address public constant Alice = 0x10020FCb72e27650651B05eD2CEcA493bC807Ba4;
     address public constant Bob = 0x200708D76eB1B69761c23821809d53F65049939e;
 
+    // test private key
+    uint256 privateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    address testSigner = vm.addr(privateKey);
 
     function setUp() public {
         deployMEP1002Token();
@@ -81,6 +84,7 @@ contract MEP2542Test is Test {
 
         mep2542.addRewardToken(address(gin1689Coin), address(0), amount);
         mep2542.addRewardToken(address(crabCoin), address(0), amount);
+        mep2542.setClaimVerifier(testSigner);
 
         mintMEP1004Token();
     }
@@ -163,9 +167,7 @@ contract MEP2542Test is Test {
     }
 
     function testSelectTokenWithSignature() public {
-            // test private key
-        uint256 privateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-        address testSigner = vm.addr(privateKey);
+
         mep2542.addRewardToken(address(maxisCoin), testSigner, 1000);
         address[] memory tokens = new address[](1);
         tokens[0] = address(maxisCoin);
@@ -332,6 +334,23 @@ contract MEP2542Test is Test {
         reward.amount[2] = amount;
     }
 
+    function mergeRewardInfo(MEP2542.RewardInfo[] memory rewards) private view returns(MEP2542.RewardInfo[] memory) {
+        MEP2542.RewardInfo[] memory mergedRewards = new MEP2542.RewardInfo[](1);
+        MEP2542.RewardInfo memory reward;
+        reward.token = new address[](3);
+        reward.token[0] = address(gin1689Coin);
+        reward.token[1] = address(crabCoin);
+        reward.token[2] = address(sensorToken);
+        reward.amount = new uint256[](3);
+        for(uint i = 0; i < rewards.length; i++) {
+            reward.amount[0] += rewards[i].amount[0];
+            reward.amount[1] += rewards[i].amount[1];
+            reward.amount[2] += rewards[i].amount[2];
+        }
+        mergedRewards[0] = reward;
+        return mergedRewards;
+    }
+
     function testGetOnlineStatus() public {
         releaseTestEpoch(1);
         assertEq(mep2542.getMinerOnlineStatus(1, 15), true);
@@ -481,6 +500,72 @@ contract MEP2542Test is Test {
         vm.expectRevert(AlreadyClaim.selector);
         ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
             abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+        );
+
+    }
+
+    function testERC6551ClaimMultiEpochRewardVerifier() public {
+        releaseTestEpoch(1);
+        releaseTestEpoch(2);
+
+        uint mep1004TokenId = 4;
+        address account = ERC6551RegistryProxy.createAccount(address(ERC6551AccountImpl), block.chainid, address(mep1004Token), mep1004TokenId, 0, "");
+        MEP2542.ProofArray[] memory proofs = new MEP2542.ProofArray[](2);
+        proofs[0].proofs = getTestRewardMerkleProof(1);
+        proofs[1].proofs = getTestRewardMerkleProof(2);
+        uint[] memory epochIds  = new uint[](2);
+        epochIds[0] = 1;
+        epochIds[1] = 2;
+
+        MEP2542.RewardInfo[] memory rewards = new MEP2542.RewardInfo[](2);
+        rewards[0] = getTestRewardInfo(100);
+        rewards[1] = getTestRewardInfo(100);
+
+        bool[] memory results  = mep2542.getMinerClaimedEpochs(mep1004TokenId,epochIds);
+        assertEq(results[0], false);
+        assertEq(mep2542.verifyMerkleProof(mep1004TokenId, proofs, epochIds, rewards), true);
+        vm.prank(Bob);
+        ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+            abi.encodeWithSelector(mep2542.claimRewards.selector, mep1004TokenId, account, proofs, epochIds, rewards)
+        );
+        // assert reward balance
+        assertEq(gin1689Coin.balanceOf(account), 200);
+        assertEq(crabCoin.balanceOf(account), 200);
+
+        // assert results
+        results  = mep2542.getMinerClaimedEpochs(mep1004TokenId,epochIds);
+        assertEq(results[0], true);
+        assertEq(results[1], true);
+
+        // test bytes32 bitmap switch
+        for(uint i = 3; i <= 1000; i++) {
+            releaseTestEpoch(i);
+        }
+        vm.startPrank(Bob);
+
+        bytes[] memory signature = new bytes[](1);
+        for (uint i = 3; i < 1000; i+=2) {
+            epochIds[0] = i;
+            epochIds[1] = i+1;
+
+            bytes32 hash = keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    mep2542.DOMAIN_SEPARATOR(),
+                    keccak256(abi.encode(mep2542.CLAIM_PERMIT_TYPEHASH(), keccak256(abi.encode(mep1004TokenId, epochIds, mergeRewardInfo(rewards))) ,testSigner, account))
+                )
+            );
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash);
+            signature[0] = abi.encodePacked(r, s, v);
+            ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+                abi.encodeWithSelector(mep2542.claimRewardsVerified.selector, mep1004TokenId, account, epochIds, mergeRewardInfo(rewards), signature[0])
+            );
+        }
+
+        // claimed
+        vm.expectRevert(AlreadyClaim.selector);
+        ERC6551AccountImplementation(payable(account)).executeCall(address(mep2542), 0,
+            abi.encodeWithSelector(mep2542.claimRewardsVerified.selector, mep1004TokenId, account, epochIds, mergeRewardInfo(rewards), signature[0])
         );
 
     }

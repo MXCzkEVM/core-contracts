@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ProxiedMEP2542} from "../contracts/MEP2542.sol";
 
-contract UpgradeMXCL1 is Script {
+contract UpgradeMEP2542 is Script {
 
     uint256 public privateKey = vm.envUint("PRIVATE_KEY");
 
@@ -16,7 +16,7 @@ contract UpgradeMXCL1 is Script {
     function run() external {
         vm.startBroadcast(privateKey);
         UUPSUpgradeable(MEP2542Addr).upgradeTo(address(new ProxiedMEP2542()));
-        ProxiedMEP2542(MEP2542Addr).setEpochExpiredTime(604800);
+        ProxiedMEP2542(MEP2542Addr).setClaimVerifier(0x9787BA9fE5F74700f38093b95F9A2562eF93A560);
         vm.stopBroadcast();
     }
 

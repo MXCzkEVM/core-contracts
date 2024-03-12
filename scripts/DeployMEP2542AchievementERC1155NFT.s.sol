@@ -15,7 +15,7 @@ contract DeployMEP2542 is Script {
     address public owner = vm.addr(deployerPrivateKey);
 
     // mainnet 0x8Ff08F39B1F4Ad7dc42E6D63fd25AeE47EA801Ce
-    address public mep1004TokenAddr = address(0x5CE293229a794AF03Ec3c95Cfba6b1058D558026);
+    address public mep1004TokenAddr = address(0x8Ff08F39B1F4Ad7dc42E6D63fd25AeE47EA801Ce);
 
     address private permitSigner = address(0x9787BA9fE5F74700f38093b95F9A2562eF93A560);
     function run() external {

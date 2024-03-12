@@ -369,7 +369,9 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         }
         if(getStatus(_tokenId) == 1) {
             if(msg.value == _exitFee) {
+                uint[3] memory whereSlot = _whereSlot[_tokenId];
                 _MEP1004Status[_tokenId] = 0;
+                _MEP1002Slot[whereSlot[0]][whereSlot[1]][whereSlot[2]] = 0;
             }
         }
         _insertToMEP1002Slot(_msgSender(), _tokenId, _mep1002Id, SNCodeType, _regionID, _slotIndex);
@@ -462,6 +464,10 @@ contract MEP1004Token is ControllableUpgradeable, IMEP1004, ERC721EnumerableUpgr
         if (msg.value < _exitFee) {
             revert InsufficientFee();
         }
+        // remove slot
+        uint[3] memory whereSlot = _whereSlot[_tokenId];
+        _whereSlot[_tokenId] = [0,0,0];
+        _MEP1002Slot[whereSlot[0]][whereSlot[1]][whereSlot[2]] = 0;
         _slotExpiredBlocks[_tokenId] = 0;
         _MEP1004Status[_tokenId] = 0;
     }

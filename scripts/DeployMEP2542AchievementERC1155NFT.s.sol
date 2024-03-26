@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import {ProxiedMEP2542AchievementERC1155NFT, MEP2542AchievementERC1155NFT} from "../contracts/token/MEP2542AchievementERC1155NFT.sol";
 
 
-contract DeployMEP2542 is Script {
+contract DeployMEP2542AchievementERC1155NFT is Script {
     uint256 public deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
     address public owner = vm.addr(deployerPrivateKey);

@@ -89,6 +89,12 @@ const config: HardhatUserConfig = {
             // gasPrice: 6000000000000,
             saveDeployments: true,
         },
+        geneva: {
+            url: "https://geneva-rpc.moonchain.com",
+            chainId: 5167004,
+            accounts: real_accounts,
+            saveDeployments: true,
+        }
     },
     namedAccounts: {
         deployer: 0,
